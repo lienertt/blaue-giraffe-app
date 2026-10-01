@@ -46,6 +46,13 @@
       Aushilfe: { 1: '-', 2: '✅ besetzt', 3: '-', 4: '-', 5: '09:00-15:00' },
       Greta: { 1: '-', 2: '-', 3: '-', 4: '-', 5: '-' },
     },
+    kinderliste: {
+      1: { anwesend: ['Jonas', 'Lia (bis 14:00)', 'Mats', 'Nele', 'Ole', 'Pia', 'Rosa', 'Theo', 'Vito', 'Wanda', 'Yuna*'], abwesend: ['Kian', 'Smilla'] },
+      2: { anwesend: ['Jonas', 'Lia (bis 14:00)', 'Mats', 'Nele', 'Ole', 'Pia', 'Rosa', 'Theo', 'Vito', 'Wanda'], abwesend: [] },
+      3: { anwesend: ['Jonas', 'Mats', 'Nele', 'Ole', 'Pia', 'Rosa', 'Theo', 'Vito', 'Wanda', 'Yuna*'], abwesend: ['Lia'] },
+      4: { anwesend: [], abwesend: [] },
+      5: { anwesend: ['Jonas', 'Lia (bis 14:00)', 'Mats', 'Nele', 'Ole', 'Pia', 'Rosa', 'Theo', 'Vito'], abwesend: ['Wanda'] },
+    },
     aenderungen: ['Anna krank am Montag', 'Aushilfe gefunden am Dienstag'],
     fehler: [],
     versendet: true,
@@ -76,5 +83,7 @@
     }
     return json({ message: 'Not Found' }, 404);
   };
+  // Preview only: open the children lists, so a screenshot shows them.
+  setTimeout(() => document.querySelectorAll('details.children').forEach((details) => { details.open = true; }), 800);
   try { localStorage.setItem('bg_token', 'vorschau'); } catch (error) { /* preview only */ }
 })();

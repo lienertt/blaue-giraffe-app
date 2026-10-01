@@ -395,7 +395,25 @@
               h('button', { type: 'button', class: slotValue === value ? 'active' : '', role: 'radio',
                 'aria-checked': String(slotValue === value), disabled: disabled || slotValue === value,
                 onclick: () => setSlot(day, value) }, label)))) : null,
-        !sickItems.length && !slotItem && !others.length ? h('li', { class: 'row muted' }, 'Keine Schichten') : null));
+        !sickItems.length && !slotItem && !others.length ? h('li', { class: 'row muted' }, 'Keine Schichten') : null),
+      renderChildren(view && view.kinderliste ? view.kinderliste[String(day)] : null));
+  }
+
+  /** The children of a day (first names, * = Eingewöhnung, "bis HH:MM" = early pick-up), collapsed. */
+  function renderChildren(list) {
+    if (!list || (!list.anwesend.length && !list.abwesend.length)) return null;
+    const counted = list.anwesend.filter((name) => !name.includes('*')).length;
+    const summary = `👶 ${counted} Kinder${list.abwesend.length ? ` · ${list.abwesend.length} fehlen` : ''}`;
+    return h('details', { class: 'children' },
+      h('summary', {}, summary),
+      h('ul', { class: 'name-chips' }, list.anwesend.map((name) => h('li', { class: name.includes('*') ? 'eingewoehnung' : '' }, name))),
+      list.abwesend.length
+        ? [h('p', { class: 'muted small absent-title' }, 'Fehlen (krank/Urlaub):'),
+          h('ul', { class: 'name-chips absent' }, list.abwesend.map((name) => h('li', {}, name)))]
+        : null,
+      list.anwesend.some((name) => name.includes('*')) || list.abwesend.some((name) => name.includes('*'))
+        ? h('p', { class: 'muted small' }, '* in Eingewöhnung, zählt nicht mit')
+        : null);
   }
 
   function renderSubstituteForm() {
