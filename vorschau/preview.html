@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="x-no-csp"
+        content="default-src 'self'; connect-src https://api.github.com; img-src 'self' data:; style-src 'self'; script-src 'self'; manifest-src 'self'">
+  <meta name="theme-color" content="#1d4e89">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Dienstplan">
+  <title>Vorschau (erfundene Daten)</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-row">
+      <h1>Dienstplan</h1>
+      <div class="topbar-actions">
+        <button type="button" id="refresh" class="icon-button" aria-label="Neu laden" title="Neu laden">⟳</button>
+        <button type="button" id="open-settings" class="icon-button" aria-label="Einstellungen" title="Einstellungen">⚙</button>
+      </div>
+    </div>
+    <div class="topbar-row week-row">
+      <label class="visually-hidden" for="week-select">Woche</label>
+      <select id="week-select"></select>
+      <button type="button" id="new-week" class="small-button">+ Woche</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <p class="muted center">Lädt …</p>
+  </main>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" id="settings-form" class="dialog-body">
+      <h2>Einstellungen</h2>
+      <label for="token-input">GitHub-Zugangsschlüssel</label>
+      <input id="token-input" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+      <p class="hint">
+        Ein „Fine-grained token“ unter <span class="mono">github.com/settings/personal-access-tokens</span>:
+        nur für das Repo <span class="mono">blaue-giraffe</span>, Berechtigung <b>Issues: Read and write</b>.
+        Er wird nur auf diesem Gerät gespeichert.
+      </p>
+      <label for="repo-input">Repo</label>
+      <input id="repo-input" type="text" autocomplete="off" spellcheck="false">
+      <div class="dialog-actions">
+        <button type="button" id="forget-token" class="link-button danger">Schlüssel löschen</button>
+        <button type="button" id="cancel-settings" class="secondary">Abbrechen</button>
+        <button type="submit" class="primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="week-dialog">
+    <form method="dialog" id="week-form" class="dialog-body">
+      <h2>Woche anlegen</h2>
+      <div class="field-row">
+        <label>Jahr <input id="week-year" type="number" min="2020" max="2100" required></label>
+        <label>KW <input id="week-number" type="number" min="1" max="53" required></label>
+      </div>
+      <div class="quick-weeks" id="quick-weeks"></div>
+      <p class="hint" id="week-note">
+        Für die aktuelle oder eine künftige Woche geht beim Anlegen sofort die Wochenmeldung raus.
+        Für eine vergangene Woche wird nur ausgewertet.
+      </p>
+      <div class="dialog-actions">
+        <button type="button" id="cancel-week" class="secondary">Abbrechen</button>
+        <button type="submit" class="primary">Anlegen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="fake-github.js"></script>
+  <script src="../logic.js"></script>
+  <script src="../app.js"></script>
+</body>
+</html>
