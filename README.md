@@ -1,5 +1,7 @@
 # blaue-giraffe-app
 
+> **Testphase.** Ausführliche Anleitung mit Test-Checkliste: `docs/app.md` im (privaten) Hauptrepo.
+
 Handy-Web-App für die **Wochen-Issue** des Kita-Dienstplans (privates Repo `blaue-giraffe`). Sie zeigt die
 Woche übersichtlich an und macht dasselbe wie die GitHub-App, nur bequemer: Häkchen setzen, eine
 Aushilfe mit Namen eintragen, „Neu berechnen und senden“, „Alles zurücksetzen“, Wochen anlegen.
