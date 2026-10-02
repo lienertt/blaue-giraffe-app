@@ -173,6 +173,22 @@
     return `${display} springt ein am ${joinGerman(sortedDays)} ${from}-${to}`;
   }
 
+  /**
+   * The comment for an added Elterndienst ("Elterndienst am <Tage> HH:MM-HH:MM"), as the week issue
+   * parses it. By the rules it only helps one kernteam person alone; otherwise the workflow adds a hint.
+   * @param {Array<number>} days Weekdays 1-5.
+   * @param {string} from "HH:MM".
+   * @param {string} to "HH:MM".
+   * @returns {string}
+   * @throws {Error} Invalid input (message in German, shown in the app).
+   */
+  function parentDutyComment(days, from, to) {
+    if (!days.length) throw new Error('Bitte mindestens einen Tag wählen.');
+    if (!(from < to)) throw new Error('„von“ muss vor „bis“ liegen.');
+    const sortedDays = [...new Set(days)].sort((a, b) => a - b).map((day) => DAYS[day - 1]);
+    return `Elterndienst am ${joinGerman(sortedDays)} ${from}-${to}`;
+  }
+
   /** Times "HH:MM" from `start` to `end` in steps of `step` minutes. */
   function timeOptions(start = '07:00', end = '18:00', step = 15) {
     const toMinutes = (value) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
@@ -215,6 +231,7 @@
     parseWeekTitle,
     joinGerman,
     substituteComment,
+    parentDutyComment,
     timeOptions,
     splitDayLine,
   };

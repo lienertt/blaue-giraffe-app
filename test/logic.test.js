@@ -105,3 +105,10 @@ test('timeOptions and splitDayLine', () => {
   assert.equal(BG.splitDayLine('⚠️ Fr 08:00 - 15:00 | Unzulässiger Dienstplan').status, 'warnung');
   assert.deepEqual(BG.splitDayLine(undefined), { status: '', text: '' });
 });
+
+test('parentDutyComment builds the format the week issue parses', () => {
+  assert.equal(BG.parentDutyComment([3], '08:00', '12:30'), 'Elterndienst am Mittwoch 08:00-12:30');
+  assert.equal(BG.parentDutyComment([4, 1], '12:30', '16:00'), 'Elterndienst am Montag und Donnerstag 12:30-16:00');
+  assert.throws(() => BG.parentDutyComment([], '08:00', '12:00'), /Tag/);
+  assert.throws(() => BG.parentDutyComment([1], '12:00', '08:00'), /vor/);
+});

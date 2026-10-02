@@ -252,6 +252,23 @@
     });
   }
 
+  async function submitParentDuty(form) {
+    const days = [...form.querySelectorAll('input[name="tag"]:checked')].map((input) => Number(input.value));
+    let text;
+    try {
+      text = BG.parentDutyComment(days, form.elements.von.value, form.elements.bis.value);
+    } catch (error) {
+      state.error = error.message;
+      render();
+      return;
+    }
+    await run(async () => {
+      const comment = await gh(`/issues/${state.number}/comments`, { method: 'POST', body: { body: text } });
+      state.comments.push(comment);
+      state.info = `Eingetragen: „${text}“ – wird beim nächsten „Neu berechnen“ berücksichtigt.`;
+    });
+  }
+
   async function createWeek(year, week) {
     const title = BG.weekTitle(year, week);
     const existing = state.issues.find((issue) => issue.state === 'open' && compareWeeks(weekOf(issue), { year, week }) === 0);
@@ -317,6 +334,7 @@
     const week = weekOf(state.issue);
     for (let day = 1; day <= 5; day += 1) blocks.push(renderDay(day, week, view));
     blocks.push(renderSubstituteForm());
+    blocks.push(renderParentDutyForm());
     blocks.push(renderLastRun(view));
     blocks.push(h('p', { class: 'center muted small' },
       h('a', { href: state.issue.html_url, target: '_blank', rel: 'noopener' }, `In GitHub öffnen (#${state.issue.number})`)));
@@ -417,7 +435,6 @@
   }
 
   function renderSubstituteForm() {
-    const times = BG.timeOptions('07:00', '18:00', 15);
     const disabled = state.busy || Boolean(state.waiting);
     const datalist = h('datalist', { id: 'known-names' }, knownNames().map((name) => h('option', { value: name })));
     return h('section', { class: 'card' },
@@ -426,12 +443,32 @@
       h('form', { class: 'substitute', onsubmit: (event) => { event.preventDefault(); submitSubstitute(event.target); } },
         datalist,
         h('label', {}, 'Vorname', h('input', { name: 'name', type: 'text', list: 'known-names', autocomplete: 'off', required: true })),
-        h('fieldset', { class: 'days' }, h('legend', {}, 'Tage'),
-          SHORT_DAYS.map((short, index) => h('label', { class: 'chip' },
-            h('input', { type: 'checkbox', name: 'tag', value: String(index + 1) }), short))),
-        h('div', { class: 'field-row' },
-          h('label', {}, 'von', h('select', { name: 'von' }, times.map((time) => h('option', { value: time, selected: time === '08:00' }, time)))),
-          h('label', {}, 'bis', h('select', { name: 'bis' }, times.map((time) => h('option', { value: time, selected: time === '16:00' }, time))))),
+        dayAndTimeFields('08:00', '16:00'),
+        h('button', { type: 'submit', class: 'secondary wide', disabled }, 'Eintragen')));
+  }
+
+  /** Days (Mo–Fr) and von/bis selects, shared by the substitute and the Elterndienst form. */
+  function dayAndTimeFields(defaultFrom, defaultTo) {
+    const times = BG.timeOptions('07:00', '18:00', 15);
+    return [
+      h('fieldset', { class: 'days' }, h('legend', {}, 'Tage'),
+        SHORT_DAYS.map((short, index) => h('label', { class: 'chip' },
+          h('input', { type: 'checkbox', name: 'tag', value: String(index + 1) }), short))),
+      h('div', { class: 'field-row' },
+        h('label', {}, 'von', h('select', { name: 'von' }, times.map((time) => h('option', { value: time, selected: time === defaultFrom }, time)))),
+        h('label', {}, 'bis', h('select', { name: 'bis' }, times.map((time) => h('option', { value: time, selected: time === defaultTo }, time))))),
+    ];
+  }
+
+  function renderParentDutyForm() {
+    const disabled = state.busy || Boolean(state.waiting);
+    return h('section', { class: 'card' },
+      h('h2', {}, 'Elterndienst eintragen'),
+      h('p', { class: 'muted small' },
+        'Hilft nur, wenn eine Kernteam-Kraft allein ist (8 → 10 Kinder). Sonst wird er trotzdem eingetragen, '
+        + 'und die Antwort sagt „bringt keine Verbesserung“.'),
+      h('form', { class: 'substitute', onsubmit: (event) => { event.preventDefault(); submitParentDuty(event.target); } },
+        dayAndTimeFields('08:00', '12:30'),
         h('button', { type: 'submit', class: 'secondary wide', disabled }, 'Eintragen')));
   }
 
