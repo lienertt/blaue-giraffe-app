@@ -99,6 +99,22 @@ test('substituteComment builds the format the week issue parses', () => {
   assert.throws(() => BG.substituteComment('Greta', [1], '12:00', '08:00'), /vor/);
 });
 
+test('slotSubstitutes finds a Zusage overlapping the slot since the last reset', () => {
+  const bot = { type: 'Bot' };
+  const person = { type: 'User' };
+  const label = 'Offene Aushilfe 12:00–16:00: gefunden';
+  const comments = [
+    { id: 1, user: person, body: 'Dora springt ein am Mittwoch 12:00-16:00' },
+    { id: 2, user: bot, body: '<!-- wochenstand {"haken": [], "kommentar": 1, "zurueckgesetzt": true} -->' },
+    { id: 3, user: person, body: 'Greta springt ein am Montag und Mittwoch 8:00-13:00' },
+    { id: 4, user: person, body: 'Hedi springt ein am Mittwoch 16:00-18:00' },
+    { id: 5, user: bot, body: 'Greta springt ein am Dienstag 12:00-16:00' },
+  ];
+  assert.deepEqual(BG.slotSubstitutes(comments, 3, label), [{ name: 'Greta', from: '08:00', to: '13:00' }]);
+  assert.deepEqual(BG.slotSubstitutes(comments, 2, label), []);
+  assert.deepEqual(BG.slotSubstitutes(comments, 1, label).map((zusage) => zusage.name), ['Greta']);
+});
+
 test('timeOptions and splitDayLine', () => {
   assert.deepEqual(BG.timeOptions('07:00', '08:00', 30), ['07:00', '07:30', '08:00']);
   assert.deepEqual(BG.splitDayLine('🟠 Mo 08:00 - 17:00 | ab 12:00: max. 8 Kinder'), { status: 'orange', text: '08:00 - 17:00 | ab 12:00: max. 8 Kinder' });

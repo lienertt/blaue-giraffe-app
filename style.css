@@ -216,6 +216,7 @@ button:disabled { opacity: 0.5; }
 .row.slot { flex-wrap: wrap; }
 .toggle { display: flex; align-items: center; gap: 8px; }
 
+.zusage { font-weight: 600; color: var(--accent); }
 .segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .segmented button {
   background: transparent;

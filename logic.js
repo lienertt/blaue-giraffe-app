@@ -207,6 +207,57 @@
     return `Elterndienst am ${joinGerman(sortedDays)} ${from}-${to}`;
   }
 
+  const DAY_WORD = '(?:montag|dienstag|mittwoch|donnerstag|freitag)';
+  // "<Name> springt ein am <Tage> HH:MM-HH:MM", as written by the app and the Aushilfen page.
+  const SUBSTITUTE_RE = new RegExp(
+    `([^\\s\\d,][^\\s,]*)\\s+springt\\s+ein\\s+am\\s+(${DAY_WORD}(?:\\s*,\\s*${DAY_WORD}|\\s+und\\s+${DAY_WORD})*)\\s+(\\d{1,2}:\\d{2})\\s*-\\s*(\\d{1,2}:\\d{2})`,
+    'gi',
+  );
+
+  function minutesOf(time) {
+    const [hours, mins] = time.split(':').map(Number);
+    return hours * 60 + mins;
+  }
+
+  /**
+   * Substitutes from comments since the last "Alles zurücksetzen" whose time overlaps the day's
+   * open Aushilfe slot, e.g. a Zusage from the Aushilfen page. Such a slot is taken, although
+   * neither of its checkboxes is checked.
+   * @param {Array<object>} comments All issue comments, oldest first.
+   * @param {number} day Weekday 1-5.
+   * @param {string} slotLabel The checklist label, e.g. "Offene Aushilfe 12:00–16:00: gefunden".
+   * @returns {Array<{name: string, from: string, to: string}>}
+   */
+  function slotSubstitutes(comments, day, slotLabel) {
+    const slots = [...(slotLabel || '').matchAll(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/g)]
+      .map((match) => [minutesOf(match[1]), minutesOf(match[2])]);
+    let resetUpTo = 0;
+    for (const comment of comments) {
+      const match = isBot(comment) && (comment.body || '').match(/<!-- wochenstand (\{.*?\}) -->/s);
+      if (!match) continue;
+      try {
+        const data = JSON.parse(match[1]);
+        if (data.zurueckgesetzt) resetUpTo = Math.max(resetUpTo, Number(data.kommentar) || 0);
+      } catch (error) {
+        // A broken marker counts as none.
+      }
+    }
+    const found = [];
+    for (const comment of comments) {
+      if (isBot(comment) || comment.id <= resetUpTo) continue;
+      for (const match of (comment.body || '').matchAll(SUBSTITUTE_RE)) {
+        const days = [...match[2].matchAll(new RegExp(DAY_WORD, 'gi'))]
+          .map((word) => DAYS.findIndex((name) => name.toLowerCase() === word[0].toLowerCase()) + 1);
+        const [from, to] = [minutesOf(match[3]), minutesOf(match[4])];
+        if (days.includes(day) && slots.some(([start, end]) => from < end && to > start)) {
+          const pad = (time) => time.padStart(5, '0');
+          found.push({ name: match[1], from: pad(match[3]), to: pad(match[4]) });
+        }
+      }
+    }
+    return found;
+  }
+
   /** Times "HH:MM" from `start` to `end` in steps of `step` minutes. */
   function timeOptions(start = '07:00', end = '18:00', step = 15) {
     const toMinutes = (value) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
@@ -251,6 +302,7 @@
     joinGerman,
     substituteComment,
     parentDutyComment,
+    slotSubstitutes,
     timeOptions,
     splitDayLine,
   };

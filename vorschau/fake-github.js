@@ -68,6 +68,7 @@
   const comments = [
     { id: 101, user: { type: 'Bot' }, body: '```\n…\n```\n<!-- wochenstand ' + JSON.stringify(stand) + ' -->\n<!-- wochenansicht ' + JSON.stringify(view) + ' -->' },
     { id: 102, user: { type: 'User' }, body: 'Greta springt ein am Mittwoch 08:00-12:00' },
+    { id: 103, user: { type: 'User' }, body: 'Dora springt ein am Freitag 09:00-15:00' },
   ];
   const json = (data, status = 200) => Promise.resolve(new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } }));
   window.fetch = (url, options = {}) => {

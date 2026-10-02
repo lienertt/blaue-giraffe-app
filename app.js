@@ -399,6 +399,8 @@
     const slotKeys = { keine: `keine-aushilfe:${day}`, gefunden: `aushilfe-gefunden:${day}` };
     const slotItem = items.find((item) => item.key === slotKeys.keine || item.key === slotKeys.gefunden);
     const slotValue = itemChecked(slotKeys.keine) ? 'keine' : itemChecked(slotKeys.gefunden) ? 'gefunden' : 'offen';
+    // A Zusage (comment "<Name> springt ein …", e.g. from the Aushilfen page) takes the slot without a checkmark.
+    const zusagen = slotItem ? BG.slotSubstitutes(state.comments, day, slotItem.label) : [];
     return h('section', { class: `card day ${status}` },
       h('div', { class: 'day-head' },
         h('h2', {}, `${DAYS[day - 1]}${dateText ? `, ${dateText}` : ''}`),
@@ -413,11 +415,14 @@
         others,
         slotItem ? h('li', { class: 'row slot' },
           h('span', {}, slotItem.label.replace(/^Offene Aushilfe\s+/, 'Aushilfe ').replace(/:\s*(keine verfügbar|gefunden)$/, '')),
-          h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': `Aushilfe ${DAYS[day - 1]}` },
-            [['offen', 'gesucht'], ['gefunden', 'gefunden'], ['keine', 'keine']].map(([value, label]) =>
-              h('button', { type: 'button', class: slotValue === value ? 'active' : '', role: 'radio',
-                'aria-checked': String(slotValue === value), disabled: disabled || slotValue === value,
-                onclick: () => setSlot(day, value) }, label)))) : null,
+          zusagen.length
+            ? h('span', { class: 'zusage', title: 'Zurücknehmen nur über „Alles zurücksetzen“' },
+              `✓ ${zusagen.map((zusage) => `${zusage.name} ${zusage.from}–${zusage.to}`).join(', ')}`)
+            : h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': `Aushilfe ${DAYS[day - 1]}` },
+              [['offen', 'gesucht'], ['gefunden', 'gefunden'], ['keine', 'keine']].map(([value, label]) =>
+                h('button', { type: 'button', class: slotValue === value ? 'active' : '', role: 'radio',
+                  'aria-checked': String(slotValue === value), disabled: disabled || slotValue === value,
+                  onclick: () => setSlot(day, value) }, label)))) : null,
         !sickItems.length && !slotItem && !others.length ? h('li', { class: 'row muted' }, 'Keine Schichten') : null),
       renderChildren(childLists ? childLists.lists[String(day)] : null, childLists ? childLists.zeitpunkt : ''));
   }
