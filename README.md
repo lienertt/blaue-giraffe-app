@@ -36,6 +36,9 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
 - **„Versenden ab heute“**: sonst gelten die Nachrichten für die ganze Woche.
 - **„Aushilfe mit Namen eintragen“**: Vorname, Tage, von–bis – schreibt einen Kommentar
   (`Greta springt ein am Mittwoch 08:00-16:30`) in die Wochen-Issue.
+- **„Elterndienst eintragen“**: Tage, von–bis – schreibt `Elterndienst am Mittwoch 08:00-12:30`. Hilft
+  nur bei einer Kernteam-Kraft allein (8 → 10 Kinder); sonst sagt die Antwort „bringt keine
+  Verbesserung“.
 - **„Letzter Lauf“**: was verschickt wurde (zum Aufklappen), Hinweise und Fehler.
 
 Was die Häkchen und Kommentare genau bewirken, steht in `docs/handy.md` im Hauptrepo.
