@@ -252,6 +252,21 @@
     });
   }
 
+  /** Takes one day of a Zusage back: edits its comment, or deletes it if nothing else is left. */
+  function removeZusage(zusage, day) {
+    const when = `${DAYS[day - 1]} ${zusage.from}–${zusage.to}`;
+    if (!confirm(`Zusage von ${zusage.name} am ${when} zurücknehmen? Verschickt wird erst beim nächsten „Neu berechnen“.`)) return;
+    run(async () => {
+      const path = `/issues/comments/${zusage.commentId}`;
+      const fresh = await gh(path);
+      const body = BG.withoutSubstituteDay(fresh.body || '', zusage.index, day);
+      if (body) await gh(path, { method: 'PATCH', body: { body } });
+      else await gh(path, { method: 'DELETE' });
+      await loadWeek();
+      state.info = `Zusage von ${zusage.name} am ${when} zurückgenommen – der Slot ist wieder offen. Verschickt wird beim nächsten „Neu berechnen“.`;
+    });
+  }
+
   async function submitParentDuty(form) {
     const days = [...form.querySelectorAll('input[name="tag"]:checked')].map((input) => Number(input.value));
     let text;
@@ -416,8 +431,10 @@
         slotItem ? h('li', { class: 'row slot' },
           h('span', {}, slotItem.label.replace(/^Offene Aushilfe\s+/, 'Aushilfe ').replace(/:\s*(keine verfügbar|gefunden)$/, '')),
           zusagen.length
-            ? h('span', { class: 'zusage', title: 'Zurücknehmen nur über „Alles zurücksetzen“' },
-              `✓ ${zusagen.map((zusage) => `${zusage.name} ${zusage.from}–${zusage.to}`).join(', ')}`)
+            ? h('span', { class: 'zusagen' }, zusagen.map((zusage) => h('span', { class: 'zusage' },
+              `✓ ${zusage.name} ${zusage.from}–${zusage.to}`,
+              h('button', { type: 'button', class: 'remove', disabled, title: 'Zusage zurücknehmen',
+                'aria-label': `Zusage von ${zusage.name} zurücknehmen`, onclick: () => removeZusage(zusage, day) }, '✕'))))
             : h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': `Aushilfe ${DAYS[day - 1]}` },
               [['offen', 'gesucht'], ['gefunden', 'gefunden'], ['keine', 'keine']].map(([value, label]) =>
                 h('button', { type: 'button', class: slotValue === value ? 'active' : '', role: 'radio',

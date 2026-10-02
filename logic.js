@@ -226,7 +226,8 @@
    * @param {Array<object>} comments All issue comments, oldest first.
    * @param {number} day Weekday 1-5.
    * @param {string} slotLabel The checklist label, e.g. "Offene Aushilfe 12:00–16:00: gefunden".
-   * @returns {Array<{name: string, from: string, to: string}>}
+   * @returns {Array<{name: string, from: string, to: string, commentId: number, index: number}>}
+   *   `commentId` and `index` (position of the match in the comment) for withoutSubstituteDay().
    */
   function slotSubstitutes(comments, day, slotLabel) {
     const slots = [...(slotLabel || '').matchAll(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/g)]
@@ -251,11 +252,32 @@
         const [from, to] = [minutesOf(match[3]), minutesOf(match[4])];
         if (days.includes(day) && slots.some(([start, end]) => from < end && to > start)) {
           const pad = (time) => time.padStart(5, '0');
-          found.push({ name: match[1], from: pad(match[3]), to: pad(match[4]) });
+          found.push({ name: match[1], from: pad(match[3]), to: pad(match[4]), commentId: comment.id, index: match.index });
         }
       }
     }
     return found;
+  }
+
+  /**
+   * A comment without one day of a Zusage, to take it back: the other days and the rest of the
+   * comment stay. An empty result means the comment can be deleted.
+   * @param {string} body The comment as it is now.
+   * @param {number} index Position of the Zusage in it (from slotSubstitutes()).
+   * @param {number} day Weekday 1-5 to take out.
+   * @returns {string} The new comment, '' if nothing is left.
+   * @throws {Error} The comment no longer has that Zusage there (changed meanwhile).
+   */
+  function withoutSubstituteDay(body, index, day) {
+    const match = [...(body || '').matchAll(SUBSTITUTE_RE)].find((candidate) => candidate.index === index);
+    const days = match
+      ? [...match[2].matchAll(new RegExp(DAY_WORD, 'gi'))]
+        .map((word) => DAYS.findIndex((name) => name.toLowerCase() === word[0].toLowerCase()) + 1)
+      : [];
+    if (!days.includes(day)) throw new Error('Der Kommentar hat sich inzwischen geändert – bitte neu laden.');
+    const rest = days.filter((other) => other !== day).map((other) => DAYS[other - 1]);
+    const replacement = rest.length ? `${match[1]} springt ein am ${joinGerman(rest)} ${match[3]}-${match[4]}` : '';
+    return (body.slice(0, index) + replacement + body.slice(index + match[0].length)).trim();
   }
 
   /** Times "HH:MM" from `start` to `end` in steps of `step` minutes. */
@@ -303,6 +325,7 @@
     substituteComment,
     parentDutyComment,
     slotSubstitutes,
+    withoutSubstituteDay,
     timeOptions,
     splitDayLine,
   };

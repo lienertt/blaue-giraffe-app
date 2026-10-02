@@ -29,7 +29,8 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
   Woche geht dabei sofort die Wochenmeldung raus, eine vergangene Woche wird nur ausgewertet.
 - **Je Tag:** die Bewertung aus dem letzten Lauf (🟢/🟠/🔴), Kinderzahl, ein Schalter „krank“ je Person
   und für offene Aushilfe-Schichten die Auswahl *gesucht / gefunden / keine* – oder, wenn eine Aushilfe
-  per Kommentar zugesagt hat (z. B. über die Aushilfen-Seite), stattdessen „✓ Name Uhrzeit“.
+  per Kommentar zugesagt hat (z. B. über die Aushilfen-Seite), stattdessen „✓ Name Uhrzeit“ mit **✕** zum
+  Zurücknehmen (nimmt nur diesen Tag aus dem Kommentar, ein leerer Kommentar wird gelöscht).
   Aufklappbar: die Kinder des Tages (Vornamen, `*` Eingewöhnung, „bis 14:00“ frühe Abholung) und wer
   fehlt (krank/Urlaub) – aus der Antwort der Wochen-Issue, nur auf dem Handy geladen.
 - **Änderungen werden nur vorgemerkt.** Oben steht, was noch nicht verschickt ist. Erst

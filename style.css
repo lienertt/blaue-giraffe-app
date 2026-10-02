@@ -216,7 +216,9 @@ button:disabled { opacity: 0.5; }
 .row.slot { flex-wrap: wrap; }
 .toggle { display: flex; align-items: center; gap: 8px; }
 
-.zusage { font-weight: 600; color: var(--accent); }
+.zusagen { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.zusage { font-weight: 600; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+.zusage .remove { border: 1px solid var(--line); background: transparent; color: inherit; border-radius: 8px; padding: 2px 8px; font: inherit; cursor: pointer; }
 .segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .segmented button {
   background: transparent;
