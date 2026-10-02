@@ -380,6 +380,11 @@
           onchange: (event) => toggle(KEYS.fromToday, event.target.checked) })) : null,
       h('button', { type: 'button', class: 'primary wide', disabled, onclick: () => trigger(KEYS.recalc, 'Neu berechnet') },
         count ? `Neu berechnen und senden (${count})` : 'Neu berechnen und senden'),
+      // Only in week issues whose checklist has the line (the workflow adds it to older ones on its next run).
+      state.items.some((item) => item.key === KEYS.preview)
+        ? h('button', { type: 'button', class: 'secondary wide', disabled,
+          onclick: () => trigger(KEYS.preview, 'Vorschau berechnet') }, '👁 Nur berechnen (Vorschau)')
+        : null,
       state.items.some((item) => item.key === KEYS.children)
         ? h('button', { type: 'button', class: 'secondary wide', disabled,
           onclick: () => trigger(KEYS.children, 'Kinderbelegung aktualisiert') }, '👶 Kinderbelegung aktualisieren')
@@ -507,7 +512,8 @@
         h('p', { class: 'muted' }, 'Noch keine Auswertung mit Zusammenfassung. Nach dem nächsten „Neu berechnen“ steht sie hier.'));
     }
     const when = new Date(view.zeitpunkt);
-    const modes = { full: 'Wochenmeldung', recalculate: 'Neu berechnet', reset: 'Zurückgesetzt' };
+    const modes = { full: 'Wochenmeldung', recalculate: 'Neu berechnet', preview: 'Vorschau', reset: 'Zurückgesetzt' };
+    const preview = view.modus === 'preview';
     return h('section', { class: 'card' },
       h('h2', {}, 'Letzter Lauf'),
       h('p', { class: 'small' }, `${modes[view.modus] || view.modus} · ${isNaN(when) ? view.zeitpunkt : when.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })} · `,
@@ -515,6 +521,11 @@
         view.ab_heute ? ' · ab heute' : ''),
       view.fehler && view.fehler.length ? h('ul', { class: 'problems' }, view.fehler.map((text) => h('li', {}, `❌ ${text}`))) : null,
       view.hinweise && view.hinweise.length ? h('ul', { class: 'hints' }, view.hinweise.map((text) => h('li', {}, text))) : null,
+      preview
+        ? h('p', { class: 'small' }, view.nachrichten && view.nachrichten.length
+          ? 'Diese Nachrichten würden mit „Neu berechnen und senden“ verschickt:'
+          : 'Mit „Neu berechnen und senden“ würde nichts verschickt.')
+        : null,
       (view.nachrichten || []).map((message) => h('details', { class: 'message' },
         h('summary', {}, message.titel), h('pre', {}, message.text))),
       view.aenderungen && view.aenderungen.length

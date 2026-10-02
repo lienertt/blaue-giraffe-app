@@ -4,7 +4,8 @@
 
 Handy-Web-App für die **Wochen-Issue** des Kita-Dienstplans (privates Repo `blaue-giraffe`). Sie zeigt die
 Woche übersichtlich an und macht dasselbe wie die GitHub-App, nur bequemer: Häkchen setzen, eine
-Aushilfe mit Namen eintragen, „Neu berechnen und senden“, „Alles zurücksetzen“, Wochen anlegen.
+Aushilfe mit Namen eintragen, „Nur berechnen“ (Vorschau), „Neu berechnen und senden“, „Alles zurücksetzen“,
+Wochen anlegen.
 
 **Dieses Repo enthält keine Daten** – keine Namen, keine Dienstpläne, keine Kinder. Die Seite lädt alles
 erst auf dem Handy über die GitHub-API aus dem privaten Repo, mit einem Zugangsschlüssel, der nur auf dem
@@ -35,6 +36,9 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
   fehlt (krank/Urlaub) – aus der Antwort der Wochen-Issue, nur auf dem Handy geladen.
 - **Änderungen werden nur vorgemerkt.** Oben steht, was noch nicht verschickt ist. Erst
   **„Neu berechnen und senden“** startet den Workflow; nach etwa einer Minute erscheint das Ergebnis.
+- **„👁 Nur berechnen“**: dieselbe Auswertung als Vorschau – unter „Letzter Lauf“ steht, was verschickt
+  würde; verschickt wird nichts, die Änderungen bleiben „noch nicht verschickt“. Erscheint, sobald die
+  Wochen-Issue den Schalter hat (neue Wochen; ältere bekommen ihn beim nächsten Lauf).
 - **„Versenden ab heute“**: sonst gelten die Nachrichten für die ganze Woche.
 - **„👶 Kinderbelegung aktualisieren“**: holt nur die Kinder je Tag frisch aus Famly (Stand-Uhrzeit in
   jedem Tag); nichts wird neu berechnet oder verschickt. Erscheint, sobald die Wochen-Issue den

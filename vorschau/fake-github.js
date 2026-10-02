@@ -26,6 +26,7 @@
     '- [ ] Offene Aushilfe 09:00–15:00: gefunden <!-- aushilfe-gefunden:5 -->', '',
     '### Woche', '',
     '- [ ] Versenden ab heute (sonst die ganze Woche) <!-- ab-heute -->',
+    '- [ ] Nur berechnen – Vorschau, nichts verschickt (Häkchen setzen oder entfernen) <!-- nur-berechnen -->',
     '- [ ] Neu berechnen und senden (Häkchen setzen oder entfernen) <!-- neu-berechnen -->',
     '- [ ] Kinderbelegung aktualisieren – nur die Kinder je Tag, nichts verschickt (Häkchen setzen oder entfernen) <!-- kinder-aktualisieren -->',
     '- [ ] Alles zurücksetzen – frischer Stand aus Famly <!-- zuruecksetzen -->', '',
