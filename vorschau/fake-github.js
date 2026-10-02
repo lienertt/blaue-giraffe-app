@@ -83,6 +83,11 @@
       comments.push(comment);
       return json(comment, 201);
     }
+    const single = path.match(/^\/issues\/comments\/(\d+)$/);
+    const found = single && comments.find((comment) => comment.id === Number(single[1]));
+    if (found && method === 'GET') return json(found);
+    if (found && method === 'PATCH') { found.body = JSON.parse(options.body).body; return json(found); }
+    if (found && method === 'DELETE') { comments.splice(comments.indexOf(found), 1); return Promise.resolve(new Response(null, { status: 204 })); }
     return json({ message: 'Not Found' }, 404);
   };
   // Preview only: open the children lists, so a screenshot shows them.

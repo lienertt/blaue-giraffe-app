@@ -110,9 +110,20 @@ test('slotSubstitutes finds a Zusage overlapping the slot since the last reset',
     { id: 4, user: person, body: 'Hedi springt ein am Mittwoch 16:00-18:00' },
     { id: 5, user: bot, body: 'Greta springt ein am Dienstag 12:00-16:00' },
   ];
-  assert.deepEqual(BG.slotSubstitutes(comments, 3, label), [{ name: 'Greta', from: '08:00', to: '13:00' }]);
+  assert.deepEqual(BG.slotSubstitutes(comments, 3, label), [{ name: 'Greta', from: '08:00', to: '13:00', commentId: 3, index: 0 }]);
   assert.deepEqual(BG.slotSubstitutes(comments, 2, label), []);
   assert.deepEqual(BG.slotSubstitutes(comments, 1, label).map((zusage) => zusage.name), ['Greta']);
+});
+
+test('withoutSubstituteDay takes one day out or empties the comment', () => {
+  const body = 'Greta springt ein am Montag, Mittwoch und Freitag 08:00-13:00';
+  assert.equal(BG.withoutSubstituteDay(body, 0, 3), 'Greta springt ein am Montag und Freitag 08:00-13:00');
+  assert.equal(BG.withoutSubstituteDay('Dora springt ein am Freitag 09:00-15:00', 0, 5), '');
+  const two = 'Dora springt ein am Freitag 09:00-15:00\nHedi springt ein am Montag 08:00-12:00';
+  const [, hedi] = [...two.matchAll(/\S+ springt/g)].map((match) => match.index);
+  assert.equal(BG.withoutSubstituteDay(two, hedi, 1), 'Dora springt ein am Freitag 09:00-15:00');
+  assert.throws(() => BG.withoutSubstituteDay(body, 0, 2), /geändert/);
+  assert.throws(() => BG.withoutSubstituteDay(body, 5, 1), /geändert/);
 });
 
 test('timeOptions and splitDayLine', () => {
