@@ -6,7 +6,7 @@
 
   const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
   const SHORT_DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
-  const KEYS = { recalc: 'neu-berechnen', reset: 'zuruecksetzen', fromToday: 'ab-heute', children: 'kinder-aktualisieren' };
+  const KEYS = { recalc: 'neu-berechnen', preview: 'nur-berechnen', reset: 'zuruecksetzen', fromToday: 'ab-heute', children: 'kinder-aktualisieren' };
   const SETTING_KEYS = new Set(Object.values(KEYS));
   // "- [ ] <text> <!-- key -->", like CHECKBOX in week_issue.py.
   const LINE_RE = /^(\s*[-*] \[)([ xX])(\] )(.*?)\s*<!-- (\S+) -->\s*$/;
