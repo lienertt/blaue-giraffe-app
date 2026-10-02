@@ -27,6 +27,7 @@
     '### Woche', '',
     '- [ ] Versenden ab heute (sonst die ganze Woche) <!-- ab-heute -->',
     '- [ ] Neu berechnen und senden (Häkchen setzen oder entfernen) <!-- neu-berechnen -->',
+    '- [ ] Kinderbelegung aktualisieren – nur die Kinder je Tag, nichts verschickt (Häkchen setzen oder entfernen) <!-- kinder-aktualisieren -->',
     '- [ ] Alles zurücksetzen – frischer Stand aus Famly <!-- zuruecksetzen -->', '',
   ].join('\n');
   const view = {

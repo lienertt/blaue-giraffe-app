@@ -34,6 +34,9 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
 - **Änderungen werden nur vorgemerkt.** Oben steht, was noch nicht verschickt ist. Erst
   **„Neu berechnen und senden“** startet den Workflow; nach etwa einer Minute erscheint das Ergebnis.
 - **„Versenden ab heute“**: sonst gelten die Nachrichten für die ganze Woche.
+- **„👶 Kinderbelegung aktualisieren“**: holt nur die Kinder je Tag frisch aus Famly (Stand-Uhrzeit in
+  jedem Tag); nichts wird neu berechnet oder verschickt. Erscheint, sobald die Wochen-Issue den
+  Schalter hat (neue Wochen, sonst einmal „Alles zurücksetzen“).
 - **„Aushilfe mit Namen eintragen“**: Vorname, Tage, von–bis – schreibt einen Kommentar
   (`Greta springt ein am Mittwoch 08:00-16:30`) in die Wochen-Issue.
 - **„Elterndienst eintragen“**: Tage, von–bis – schreibt `Elterndienst am Mittwoch 08:00-12:30`. Hilft

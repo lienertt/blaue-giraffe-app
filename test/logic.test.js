@@ -112,3 +112,18 @@ test('parentDutyComment builds the format the week issue parses', () => {
   assert.throws(() => BG.parentDutyComment([], '08:00', '12:00'), /Tag/);
   assert.throws(() => BG.parentDutyComment([1], '12:00', '08:00'), /vor/);
 });
+
+test('latestChildren takes the newest list from either marker', () => {
+  const view = (time, name) => JSON.stringify({ zeitpunkt: time, kinderliste: { 1: { anwesend: [name], abwesend: [] } } });
+  const comments = [
+    bot(1, `<!-- wochenansicht ${view('2026-11-02T07:40', 'Jonas')} -->`),
+    bot(2, `<!-- wochenkinder ${view('2026-11-02T09:15', 'Lia')} -->`),
+    person(3, 'Greta springt ein am Montag 08:00-12:00'),
+  ];
+  assert.deepEqual(BG.latestChildren(comments), { lists: { 1: { anwesend: ['Lia'], abwesend: [] } }, zeitpunkt: '2026-11-02T09:15' });
+  comments.push(bot(4, `<!-- wochenstand {"haken": []} -->\n<!-- wochenansicht ${view('2026-11-02T10:00', 'Mats')} -->`));
+  assert.equal(BG.latestChildren(comments).lists[1].anwesend[0], 'Mats');
+  assert.equal(BG.latestChildren([person(1, 'x')]), null);
+  assert.equal(BG.KEYS.children, 'kinder-aktualisieren');
+  assert.ok(BG.SETTING_KEYS.has('kinder-aktualisieren'));
+});
