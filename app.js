@@ -332,7 +332,8 @@
         'Diese Wochen-Issue hat noch keine Liste zum Abhaken. Der Workflow schreibt sie beim Anlegen einer Woche; ältere Issues bekommen sie nicht automatisch.')));
     }
     const week = weekOf(state.issue);
-    for (let day = 1; day <= 5; day += 1) blocks.push(renderDay(day, week, view));
+    const childLists = BG.latestChildren(state.comments);
+    for (let day = 1; day <= 5; day += 1) blocks.push(renderDay(day, week, view, childLists));
     blocks.push(renderSubstituteForm());
     blocks.push(renderParentDutyForm());
     blocks.push(renderLastRun(view));
@@ -364,6 +365,10 @@
           onchange: (event) => toggle(KEYS.fromToday, event.target.checked) })) : null,
       h('button', { type: 'button', class: 'primary wide', disabled, onclick: () => trigger(KEYS.recalc, 'Neu berechnet') },
         count ? `Neu berechnen und senden (${count})` : 'Neu berechnen und senden'),
+      state.items.some((item) => item.key === KEYS.children)
+        ? h('button', { type: 'button', class: 'secondary wide', disabled,
+          onclick: () => trigger(KEYS.children, 'Kinderbelegung aktualisiert') }, '👶 Kinderbelegung aktualisieren')
+        : null,
       h('button', { type: 'button', class: 'secondary danger wide', disabled,
         onclick: () => {
           if (confirm('Alle Häkchen und Kommentare dieser Woche verwerfen und die Liste frisch aus Famly schreiben? Verschickt wird dabei nichts.')) {
@@ -377,7 +382,7 @@
     return `${day}${item.label}`;
   }
 
-  function renderDay(day, week, view) {
+  function renderDay(day, week, view, childLists) {
     const items = state.items.filter((item) => item.day === day);
     const dateText = week ? formatDate(BG.dateOf(week.year, week.week, day)) : '';
     const line = view && view.tage ? view.tage[String(day)] : '';
@@ -414,14 +419,16 @@
                 'aria-checked': String(slotValue === value), disabled: disabled || slotValue === value,
                 onclick: () => setSlot(day, value) }, label)))) : null,
         !sickItems.length && !slotItem && !others.length ? h('li', { class: 'row muted' }, 'Keine Schichten') : null),
-      renderChildren(view && view.kinderliste ? view.kinderliste[String(day)] : null));
+      renderChildren(childLists ? childLists.lists[String(day)] : null, childLists ? childLists.zeitpunkt : ''));
   }
 
   /** The children of a day (first names, * = Eingewöhnung, "bis HH:MM" = early pick-up), collapsed. */
-  function renderChildren(list) {
+  function renderChildren(list, zeitpunkt) {
     if (!list || (!list.anwesend.length && !list.abwesend.length)) return null;
     const counted = list.anwesend.filter((name) => !name.includes('*')).length;
-    const summary = `👶 ${counted} Kinder${list.abwesend.length ? ` · ${list.abwesend.length} fehlen` : ''}`;
+    const when = new Date(zeitpunkt);
+    const stand = isNaN(when) ? '' : ` · Stand ${when.toLocaleString('de-DE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`;
+    const summary = `👶 ${counted} Kinder${list.abwesend.length ? ` · ${list.abwesend.length} fehlen` : ''}${stand}`;
     return h('details', { class: 'children' },
       h('summary', {}, summary),
       h('ul', { class: 'name-chips' }, list.anwesend.map((name) => h('li', { class: name.includes('*') ? 'eingewoehnung' : '' }, name))),

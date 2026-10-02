@@ -6,7 +6,7 @@
 
   const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
   const SHORT_DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
-  const KEYS = { recalc: 'neu-berechnen', reset: 'zuruecksetzen', fromToday: 'ab-heute' };
+  const KEYS = { recalc: 'neu-berechnen', reset: 'zuruecksetzen', fromToday: 'ab-heute', children: 'kinder-aktualisieren' };
   const SETTING_KEYS = new Set(Object.values(KEYS));
   // "- [ ] <text> <!-- key -->", like CHECKBOX in week_issue.py.
   const LINE_RE = /^(\s*[-*] \[)([ xX])(\] )(.*?)\s*<!-- (\S+) -->\s*$/;
@@ -72,6 +72,24 @@
         return { data: JSON.parse(match[1]), comment };
       } catch (error) {
         // A broken marker counts as none, like WeekState parsing in Python.
+      }
+    }
+    return null;
+  }
+
+  /**
+   * The newest children per day: from a "Kinderbelegung aktualisieren" reply (`wochenkinder`) or
+   * from the summary of a normal run (`wochenansicht`), whichever is newer.
+   * @param {Array<object>} comments Issue comments, oldest first.
+   * @returns {{lists: Object<string, {anwesend: string[], abwesend: string[]}>, zeitpunkt: string}|null}
+   */
+  function latestChildren(comments) {
+    for (let i = comments.length - 1; i >= 0; i -= 1) {
+      for (const name of ['wochenkinder', 'wochenansicht']) {
+        const marker = latestMarker([comments[i]], name);
+        if (marker && marker.data.kinderliste && Object.keys(marker.data.kinderliste).length) {
+          return { lists: marker.data.kinderliste, zeitpunkt: marker.data.zeitpunkt };
+        }
       }
     }
     return null;
@@ -222,6 +240,7 @@
     parseChecklist,
     setChecks,
     latestMarker,
+    latestChildren,
     isBot,
     pendingChanges,
     isoWeek,
