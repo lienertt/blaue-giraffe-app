@@ -100,24 +100,99 @@
   }
 
   /**
-   * What has been changed since the last send: checkmarks and comments not yet handled.
+   * What has been changed since the last send: checkmarks, comments and Zusagen not yet handled.
    * @param {Array<object>} items From parseChecklist().
    * @param {Array<object>} comments All issue comments, oldest first.
-   * @returns {{added: Array<object>, removed: Array<object>, comments: Array<object>}} Checklist
-   *   items newly checked / unchecked, and comments by people written since the stored state.
+   * @param {{year: number, week: number}|null} [week] The issue's week, for a Zusage without "am".
+   * @returns {{added: Array<object>, removed: Array<object>, comments: Array<object>,
+   *   withdrawn: Array<{name: string, day: number}>, changed: Array<string>}} Checklist items newly
+   *   checked / unchecked, comments by people written since the stored state, Zusagen sent before
+   *   and gone now (like withdrawn_substitutes() in Python), and Zusagen ("Name:Tag:HH:MM-HH:MM")
+   *   from older comments that were changed since. The last two only if the state stores
+   *   `zusagen` (states before that don't).
    */
-  function pendingChanges(items, comments) {
+  function pendingChanges(items, comments, week = null) {
     const marker = latestMarker(comments, 'wochenstand');
     const handled = new Set(marker ? marker.data.haken || [] : []);
     const changeItems = items.filter((item) => !SETTING_KEYS.has(item.key));
     const seen = marker
       ? Number(marker.data.kommentar) || 0
       : Math.max(0, ...comments.filter(isBot).map((comment) => comment.id));
-    return {
+    const pending = {
       added: changeItems.filter((item) => item.checked && !handled.has(item.key)),
       removed: changeItems.filter((item) => !item.checked && handled.has(item.key)),
       comments: comments.filter((comment) => !isBot(comment) && comment.id > seen),
+      withdrawn: [],
+      changed: [],
     };
+    if (marker && Array.isArray(marker.data.zusagen)) {
+      const sent = new Set(marker.data.zusagen);
+      const current = substituteEntries(comments, week);
+      const stillThere = new Set([...current.keys()].map((entry) => nameAndDay(entry).join(':').toLowerCase()));
+      const withdrawn = new Map();
+      for (const entry of sent) {
+        const [name, day] = nameAndDay(entry);
+        if (!stillThere.has(`${name}:${day}`.toLowerCase())) withdrawn.set(`${name}:${day}`, { name, day });
+      }
+      pending.withdrawn = [...withdrawn.values()].sort((a, b) => a.day - b.day || a.name.localeCompare(b.name));
+      pending.changed = [...current].filter(([entry, id]) => !sent.has(entry) && id <= seen).map(([entry]) => entry).sort();
+    }
+    return pending;
+  }
+
+  function nameAndDay(entry) {
+    const [name, day] = entry.split(':');
+    return [name, Number(day)];
+  }
+
+  /** The id up to which "Alles zurücksetzen" dropped the comments (from the wochenstand markers). */
+  function resetUpTo(comments) {
+    let upTo = 0;
+    for (const comment of comments) {
+      const match = isBot(comment) && (comment.body || '').match(/<!-- wochenstand (\{.*?\}) -->/s);
+      if (!match) continue;
+      try {
+        const data = JSON.parse(match[1]);
+        if (data.zurueckgesetzt) upTo = Math.max(upTo, Number(data.kommentar) || 0);
+      } catch (error) {
+        // A broken marker counts as none.
+      }
+    }
+    return upTo;
+  }
+
+  /** The weekday 1-5 of the week on which a comment was written (Berlin time), or 0. */
+  function writtenDay(comment, week) {
+    if (!week || !comment.created_at) return 0;
+    const written = new Date(comment.created_at).toLocaleDateString('en-CA', { timeZone: 'Europe/Berlin' });
+    for (let day = 1; day <= 5; day += 1) {
+      if (dateOf(week.year, week.week, day).toISOString().slice(0, 10) === written) return day;
+    }
+    return 0;
+  }
+
+  /**
+   * The Zusagen in the comments since the last reset, like substitute_entries() in Python.
+   * @param {Array<object>} comments All issue comments, oldest first.
+   * @param {{year: number, week: number}|null} week The issue's week, for a Zusage without "am".
+   * @returns {Map<string, number>} "Name:Tag:HH:MM-HH:MM" (name capitalized) -> id of the comment.
+   */
+  function substituteEntries(comments, week) {
+    const upTo = resetUpTo(comments);
+    const entries = new Map();
+    for (const comment of comments) {
+      if (isBot(comment) || comment.id <= upTo) continue;
+      for (const match of (comment.body || '').matchAll(ANY_SUBSTITUTE_RE)) {
+        const days = match[2]
+          ? [...match[2].matchAll(new RegExp(DAY_WORD, 'gi'))]
+            .map((word) => DAYS.findIndex((name) => name.toLowerCase() === word[0].toLowerCase()) + 1)
+          : [writtenDay(comment, week)].filter(Boolean);
+        const name = match[1][0].toUpperCase() + match[1].slice(1).toLowerCase();
+        const pad = (time) => time.padStart(5, '0');
+        for (const day of days) entries.set(`${name}:${day}:${pad(match[3])}-${pad(match[4])}`, comment.id);
+      }
+    }
+    return entries;
   }
 
   /**
@@ -214,6 +289,13 @@
     'gi',
   );
 
+  // The same, with "am <Tage>" optional (then it is the day the comment was written), like SUBSTITUTE
+  // in week_issue.py.
+  const ANY_SUBSTITUTE_RE = new RegExp(
+    `([^\\s\\d,][^\\s,]*)\\s+springt\\s+ein(?:\\s+am\\s+(${DAY_WORD}(?:\\s*,\\s*${DAY_WORD}|\\s+und\\s+${DAY_WORD})*))?\\s+(\\d{1,2}:\\d{2})\\s*-\\s*(\\d{1,2}:\\d{2})`,
+    'gi',
+  );
+
   function minutesOf(time) {
     const [hours, mins] = time.split(':').map(Number);
     return hours * 60 + mins;
@@ -232,20 +314,10 @@
   function slotSubstitutes(comments, day, slotLabel) {
     const slots = [...(slotLabel || '').matchAll(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/g)]
       .map((match) => [minutesOf(match[1]), minutesOf(match[2])]);
-    let resetUpTo = 0;
-    for (const comment of comments) {
-      const match = isBot(comment) && (comment.body || '').match(/<!-- wochenstand (\{.*?\}) -->/s);
-      if (!match) continue;
-      try {
-        const data = JSON.parse(match[1]);
-        if (data.zurueckgesetzt) resetUpTo = Math.max(resetUpTo, Number(data.kommentar) || 0);
-      } catch (error) {
-        // A broken marker counts as none.
-      }
-    }
+    const upTo = resetUpTo(comments);
     const found = [];
     for (const comment of comments) {
-      if (isBot(comment) || comment.id <= resetUpTo) continue;
+      if (isBot(comment) || comment.id <= upTo) continue;
       for (const match of (comment.body || '').matchAll(SUBSTITUTE_RE)) {
         const days = [...match[2].matchAll(new RegExp(DAY_WORD, 'gi'))]
           .map((word) => DAYS.findIndex((name) => name.toLowerCase() === word[0].toLowerCase()) + 1);
@@ -316,6 +388,7 @@
     latestChildren,
     isBot,
     pendingChanges,
+    substituteEntries,
     isoWeek,
     dateOf,
     weeksInYear,

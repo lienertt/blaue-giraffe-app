@@ -358,14 +358,20 @@
   }
 
   function renderControls() {
-    const pending = BG.pendingChanges(state.items, state.comments);
-    const count = pending.added.length + pending.removed.length + pending.comments.length;
+    const pending = BG.pendingChanges(state.items, state.comments, weekOf(state.issue));
+    const count = pending.added.length + pending.removed.length + pending.comments.length
+      + pending.withdrawn.length + pending.changed.length;
     const disabled = state.busy || Boolean(state.waiting) || !state.items.length;
     const fromTodayItem = state.items.find((item) => item.key === KEYS.fromToday);
     const lines = [
       ...pending.added.map((item) => `+ ${describe(item)}`),
       ...pending.removed.map((item) => `− ${describe(item)} (zurückgenommen, ohne eigene Nachricht)`),
       ...pending.comments.map((comment) => `💬 ${comment.body.trim().slice(0, 120)}`),
+      ...pending.withdrawn.map(({ name, day }) => `− Zusage ${name} ${SHORT_DAYS[day - 1]} zurückgenommen`),
+      ...pending.changed.map((entry) => {
+        const [name, day, ...times] = entry.split(':');
+        return `✏️ Zusage geändert: ${name} ${SHORT_DAYS[Number(day) - 1]} ${times.join(':').replace('-', '–')}`;
+      }),
     ];
     return h('section', { class: 'card controls' },
       state.issue.state === 'closed' ? h('p', { class: 'muted small' }, 'Diese Wochen-Issue ist geschlossen.') : null,

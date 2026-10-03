@@ -34,7 +34,9 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
   Zurücknehmen (nimmt nur diesen Tag aus dem Kommentar, ein leerer Kommentar wird gelöscht).
   Aufklappbar: die Kinder des Tages (Vornamen, `*` Eingewöhnung, „bis 14:00“ frühe Abholung) und wer
   fehlt (krank/Urlaub) – aus der Antwort der Wochen-Issue, nur auf dem Handy geladen.
-- **Änderungen werden nur vorgemerkt.** Oben steht, was noch nicht verschickt ist. Erst
+- **Änderungen werden nur vorgemerkt.** Oben steht, was noch nicht verschickt ist – auch eine schon
+  verschickte Zusage, die inzwischen zurückgenommen („− Zusage … zurückgenommen“) oder geändert wurde
+  („✏️ Zusage geändert“); „Neu berechnen“ meldet sie dann mit eigener Nachricht. Erst
   **„Neu berechnen und senden“** startet den Workflow; nach etwa einer Minute erscheint das Ergebnis.
 - **„👁 Nur berechnen“**: dieselbe Auswertung als Vorschau – unter „Letzter Lauf“ steht, was verschickt
   würde; verschickt wird nichts, die Änderungen bleiben „noch nicht verschickt“. Erscheint, sobald die
