@@ -98,6 +98,10 @@
 
   async function loadIssues() {
     const issues = (await getAll('/issues?labels=woche&state=all')).filter((issue) => !issue.pull_request && weekOf(issue));
+    // GitHub lists a just created issue only after a while: keep the one shown (e.g. after "+ Woche").
+    if (state.issue && state.issue.number === state.number && !issues.some((issue) => issue.number === state.number)) {
+      issues.push(state.issue);
+    }
     issues.sort((a, b) => compareWeeks(weekOf(b), weekOf(a)) || a.number - b.number);
     state.issues = issues;
     if (!issues.some((issue) => issue.number === state.number)) state.number = defaultIssue();
@@ -329,6 +333,7 @@
     await run(async () => {
       const issue = await gh('/issues', { method: 'POST', body: { title, labels: ['woche'] } });
       state.number = issue.number;
+      state.issue = issue;
       await loadIssues();
       await loadWeek();
       startWaiting(0, 'Woche angelegt');
