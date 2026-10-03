@@ -64,7 +64,8 @@
     ],
     hinweise: ['⚠ Offene Aushilfe Fr, 06.11. 09:00–15:00 bringt keine Verbesserung – ohne sie müssten nicht mehr Kinder zu Hause bleiben.'],
   };
-  const stand = { haken: ['krank:Anna:1'], kommentar: 101, zurueckgesetzt: false };
+  // Hanna's Zusage for Thursday was sent and its comment is gone: shown as withdrawn.
+  const stand = { haken: ['krank:Anna:1'], kommentar: 101, zurueckgesetzt: false, zusagen: ['Hanna:4:09:00-15:00'] };
   const issue = { number: 45, title: '2026 KW45', state: 'open', body, html_url: 'https://github.com/' };
   const comments = [
     { id: 101, user: { type: 'Bot' }, body: '```\n…\n```\n<!-- wochenstand ' + JSON.stringify(stand) + ' -->\n<!-- wochenansicht ' + JSON.stringify(view) + ' -->' },

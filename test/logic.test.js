@@ -77,6 +77,24 @@ test('pendingChanges compares with the stored state', () => {
   assert.deepEqual(withoutState.comments.map((comment) => comment.id), [3]);
 });
 
+test('pendingChanges finds withdrawn and changed Zusagen', () => {
+  const items = BG.parseChecklist(BODY);
+  const state = { haken: ['krank:Bea:1'], kommentar: 12, zurueckgesetzt: false, zusagen: ['Greta:1:08:00-12:00', 'Greta:3:08:00-12:00', 'Hanna:2:09:00-16:00', 'Ida:4:12:00-16:00'] };
+  const comments = [
+    person(10, 'Greta springt ein am Montag 9:00-12:00'), // changed times on Monday, Wednesday gone
+    { ...person(11, 'Ida springt ein 12:00-16:00'), created_at: '2026-11-05T09:00:00Z' }, // no "am": Thursday
+    bot(12, `<!-- wochenstand ${JSON.stringify(state)} -->`),
+  ];
+  const week = { year: 2026, week: 45 };
+  const pending = BG.pendingChanges(items, comments, week);
+  assert.deepEqual(pending.withdrawn, [{ name: 'Hanna', day: 2 }, { name: 'Greta', day: 3 }]);
+  assert.deepEqual(pending.changed, ['Greta:1:09:00-12:00']);
+  assert.deepEqual(pending.comments, []);
+  // A state from before the Zusagen were stored says nothing about them.
+  const old = [comments[0], bot(12, '<!-- wochenstand {"haken": [], "kommentar": 12, "zurueckgesetzt": false} -->')];
+  assert.deepEqual(BG.pendingChanges(items, old, week).withdrawn, []);
+});
+
 test('ISO weeks and titles', () => {
   assert.deepEqual(BG.isoWeek(new Date(2026, 9, 1)), { year: 2026, week: 40 });
   assert.deepEqual(BG.isoWeek(new Date(2027, 0, 1)), { year: 2026, week: 53 });
