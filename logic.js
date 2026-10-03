@@ -114,7 +114,8 @@
   function pendingChanges(items, comments, week = null) {
     const marker = latestMarker(comments, 'wochenstand');
     const handled = new Set(marker ? marker.data.haken || [] : []);
-    const changeItems = items.filter((item) => !SETTING_KEYS.has(item.key));
+    // Release lines for the Aushilfen page are no change of the week, like the toggles.
+    const changeItems = items.filter((item) => !SETTING_KEYS.has(item.key) && !item.key.startsWith('freigabe:'));
     const seen = marker
       ? Number(marker.data.kommentar) || 0
       : Math.max(0, ...comments.filter(isBot).map((comment) => comment.id));
@@ -377,6 +378,118 @@
     return { status: '', text: line || '' };
   }
 
+  // ---------- Release for the Aushilfen page ----------
+  // A release line in the checklist decides that the Aushilfen page shows a slot:
+  // "- [x] Für Aushilfen freigegeben: Mi 08:30–14:30 <!-- freigabe:krank:Anna:3:08:30-14:30 -->".
+  // The source is "aushilfe" (open Aushilfe shift from Famly) or "krank:<Name>" (a sick person's shift).
+  // aushilfen/src/slots.js in the main repository reads the same keys.
+  const RELEASE_PREFIX = 'freigabe:';
+  const RELEASE_KEY_RE = /^freigabe:(aushilfe|krank:([^:]+)):([1-5]):(\d{2}:\d{2})-(\d{2}:\d{2})$/;
+  // A slot for an Aushilfe starts at 08:30 at the earliest and lasts at most 6 hours.
+  const RELEASE_EARLIEST = '08:30';
+  const RELEASE_MAX_MINUTES = 6 * 60;
+
+  function timeOf(minutes) {
+    return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+  }
+
+  /**
+   * The key of a release line.
+   * @param {string} source "aushilfe" or "krank:<Name>".
+   * @param {number} day Weekday 1-5.
+   * @param {string} start "HH:MM".
+   * @param {string} end "HH:MM".
+   * @returns {string}
+   */
+  function releaseKey(source, day, start, end) {
+    return `${RELEASE_PREFIX}${source}:${day}:${start}-${end}`;
+  }
+
+  /**
+   * Reads a release key.
+   * @param {string} key
+   * @returns {{source: string, day: number, start: string, end: string}|null} `source` as in
+   *   releaseKey(); null for any other key.
+   */
+  function parseReleaseKey(key) {
+    const match = (key || '').match(RELEASE_KEY_RE);
+    return match ? { source: match[1], day: Number(match[3]), start: match[4], end: match[5] } : null;
+  }
+
+  /** The whole checklist line for a release key. */
+  function releaseLine(key, checked = true) {
+    const release = parseReleaseKey(key);
+    return `- [${checked ? 'x' : ' '}] Für Aushilfen freigegeben: ${SHORT_DAYS[release.day - 1]} ${release.start}–${release.end} <!-- ${key} -->`;
+  }
+
+  /**
+   * Inserts a line after the checklist line with `afterKey` and the release lines that follow it.
+   * @param {string} body The issue description.
+   * @param {string} afterKey E.g. "krank:Anna:3" or "aushilfe-gefunden:3".
+   * @param {string} line The new line.
+   * @returns {string} The new description.
+   * @throws {Error} There is no line with `afterKey`.
+   */
+  function addLineAfter(body, afterKey, line) {
+    const newline = body.includes('\r\n') ? '\r\n' : '\n';
+    const lines = body.split(/\r?\n/);
+    const keyOf = (text) => { const match = (text || '').match(LINE_RE); return match ? match[5] : null; };
+    let index = lines.findIndex((text) => keyOf(text) === afterKey);
+    if (index < 0) throw new Error(`Zeile nicht gefunden: ${afterKey}`);
+    while (index + 1 < lines.length && (keyOf(lines[index + 1]) || '').startsWith(RELEASE_PREFIX)) index += 1;
+    lines.splice(index + 1, 0, line);
+    return lines.join(newline);
+  }
+
+  /** The description without the checklist line with `key` (unchanged if there is none). */
+  function removeLine(body, key) {
+    const newline = body.includes('\r\n') ? '\r\n' : '\n';
+    return body.split(/\r?\n/).filter((text) => { const match = text.match(LINE_RE); return !match || match[5] !== key; }).join(newline);
+  }
+
+  /** The times in a checklist label, e.g. "Anna 08:00–12:00, 14:00–17:00 krank" → two ranges. */
+  function labelRanges(label) {
+    return [...(label || '').matchAll(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/g)]
+      .map((match) => ({ start: match[1].padStart(5, '0'), end: match[2].padStart(5, '0') }));
+  }
+
+  /**
+   * A proposal for the next release of a shift: from 08:30 at the earliest (or where the releases
+   * so far end), for at most 6 hours.
+   * @param {Array<{start: string, end: string}>} ranges The shift's times (labelRanges()).
+   * @param {Array<{start: string, end: string}>} released The releases of this shift so far.
+   * @returns {{start: string, end: string}|null} null if everything is released already.
+   */
+  function proposeRelease(ranges, released) {
+    for (const range of ranges) {
+      let start = Math.max(minutesOf(range.start), minutesOf(RELEASE_EARLIEST));
+      for (const entry of released) {
+        if (minutesOf(entry.start) <= start && minutesOf(entry.end) > start) start = minutesOf(entry.end);
+      }
+      const end = Math.min(minutesOf(range.end), start + RELEASE_MAX_MINUTES);
+      if (end > start) return { start: timeOf(start), end: timeOf(end) };
+    }
+    return null;
+  }
+
+  /**
+   * Checks a release before it is written.
+   * @param {Array<{start: string, end: string}>} ranges The shift's times.
+   * @param {string} start "HH:MM".
+   * @param {string} end "HH:MM".
+   * @throws {Error} The slot is outside the shift, starts before 08:30 or lasts longer than 6
+   *   hours (message in German, shown in the app).
+   */
+  function checkRelease(ranges, start, end) {
+    const [from, to] = [minutesOf(start), minutesOf(end)];
+    if (!(from < to)) throw new Error('„von“ muss vor „bis“ liegen.');
+    if (from < minutesOf(RELEASE_EARLIEST)) throw new Error(`Ein Slot für Aushilfen beginnt frühestens um ${RELEASE_EARLIEST}.`);
+    if (to - from > RELEASE_MAX_MINUTES) throw new Error('Ein Slot für Aushilfen dauert höchstens 6 Stunden.');
+    if (!ranges.some((range) => minutesOf(range.start) <= from && to <= minutesOf(range.end))) {
+      throw new Error('Der Slot muss innerhalb der Schicht liegen.');
+    }
+  }
+
   const api = {
     DAYS,
     SHORT_DAYS,
@@ -401,6 +514,15 @@
     withoutSubstituteDay,
     timeOptions,
     splitDayLine,
+    RELEASE_PREFIX,
+    releaseKey,
+    parseReleaseKey,
+    releaseLine,
+    addLineAfter,
+    removeLine,
+    labelRanges,
+    proposeRelease,
+    checkRelease,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.BG = api;

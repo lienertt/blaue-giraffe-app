@@ -34,6 +34,10 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
   Zurücknehmen (nimmt nur diesen Tag aus dem Kommentar, ein leerer Kommentar wird gelöscht).
   Aufklappbar: die Kinder des Tages (Vornamen, `*` Eingewöhnung, „bis 14:00“ frühe Abholung) und wer
   fehlt (krank/Urlaub) – aus der Antwort der Wochen-Issue, nur auf dem Handy geladen.
+- **„+ Für Aushilfen freigeben“** unter offenen Aushilfe-Schichten und abgehakten Krankmeldungen: gibt
+  einen Slot für die Aushilfen-Seite frei (Vorschlag ab 08:30, höchstens 6 Stunden, Zeiten änderbar,
+  mehrere Slots je Ausfall möglich). Die App schreibt dafür eine Zeile „Für Aushilfen freigegeben“
+  (`<!-- freigabe:… -->`) unter die Schicht; sie wirkt sofort und zählt nicht als Änderung der Woche.
 - **Änderungen werden nur vorgemerkt.** Oben steht, was noch nicht verschickt ist – auch eine schon
   verschickte Zusage, die inzwischen zurückgenommen („− Zusage … zurückgenommen“) oder geändert wurde
   („✏️ Zusage geändert“); „Neu berechnen“ meldet sie dann mit eigener Nachricht. Erst

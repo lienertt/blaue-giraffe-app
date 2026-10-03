@@ -172,3 +172,40 @@ test('latestChildren takes the newest list from either marker', () => {
   assert.equal(BG.KEYS.children, 'kinder-aktualisieren');
   assert.ok(BG.SETTING_KEYS.has('kinder-aktualisieren'));
 });
+
+test('release lines: key, line, insert below the shift and remove', () => {
+  const key = BG.releaseKey('krank:Anna', 1, '08:30', '14:30');
+  assert.equal(key, 'freigabe:krank:Anna:1:08:30-14:30');
+  assert.deepEqual(BG.parseReleaseKey(key), { source: 'krank:Anna', day: 1, start: '08:30', end: '14:30' });
+  assert.equal(BG.parseReleaseKey('krank:Anna:1'), null);
+  assert.equal(BG.releaseLine(key), '- [x] Für Aushilfen freigegeben: Mo 08:30–14:30 <!-- freigabe:krank:Anna:1:08:30-14:30 -->');
+
+  let body = BG.addLineAfter(BODY, 'krank:Anna:1', BG.releaseLine(key));
+  const second = BG.releaseKey('krank:Anna', 1, '14:30', '17:00');
+  body = BG.addLineAfter(body, 'krank:Anna:1', BG.releaseLine(second, false));
+  const keys = BG.parseChecklist(body).map((item) => item.key);
+  assert.deepEqual(keys.slice(0, 4), ['krank:Anna:1', key, second, 'krank:Bea:1']); // in order, below Anna
+  assert.equal(BG.removeLine(BG.removeLine(body, key), second), BODY);
+  assert.throws(() => BG.addLineAfter(BODY, 'krank:Dora:2', 'x'), /krank:Dora:2/);
+});
+
+test('release lines are no change of the week', () => {
+  const body = BG.addLineAfter(BODY, 'krank:Bea:1', BG.releaseLine(BG.releaseKey('krank:Bea', 1, '08:30', '14:30')));
+  const pending = BG.pendingChanges(BG.parseChecklist(body), [bot(1, '<!-- wochenstand {"haken": ["krank:Bea:1"], "kommentar": 0} -->')]);
+  assert.deepEqual(pending.added, []);
+});
+
+test('proposeRelease and checkRelease: from 08:30, at most 6 hours, within the shift', () => {
+  const ranges = BG.labelRanges('Anna 08:00–17:00 krank');
+  assert.deepEqual(ranges, [{ start: '08:00', end: '17:00' }]);
+  assert.deepEqual(BG.proposeRelease(ranges, []), { start: '08:30', end: '14:30' });
+  assert.deepEqual(BG.proposeRelease(ranges, [{ start: '08:30', end: '14:30' }]), { start: '14:30', end: '17:00' });
+  assert.equal(BG.proposeRelease(ranges, [{ start: '08:30', end: '14:30' }, { start: '14:30', end: '17:00' }]), null);
+  assert.deepEqual(BG.proposeRelease(BG.labelRanges('Offene Aushilfe 12:00–16:00: gefunden'), []), { start: '12:00', end: '16:00' });
+
+  assert.doesNotThrow(() => BG.checkRelease(ranges, '08:30', '14:30'));
+  assert.throws(() => BG.checkRelease(ranges, '08:00', '12:00'), /08:30/);
+  assert.throws(() => BG.checkRelease(ranges, '09:00', '15:30'), /6 Stunden/);
+  assert.throws(() => BG.checkRelease(ranges, '15:00', '18:00'), /innerhalb/);
+  assert.throws(() => BG.checkRelease(ranges, '12:00', '12:00'), /vor/);
+});

@@ -28,6 +28,8 @@
     waiting: null,
     error: '',
     info: '',
+    // The checklist key below which the release form is open ("krank:Anna:3", "aushilfe-gefunden:3").
+    releaseForm: null,
   };
 
   const $ = (selector) => document.querySelector(selector);
@@ -156,12 +158,43 @@
 
   /** Sets checkmarks on the freshly loaded description, so nothing someone else changed is lost. */
   async function applyChecks(changes) {
+    await changeBody((body) => BG.setChecks(body, changes));
+  }
+
+  /** Changes the freshly loaded description with `change(body)` and saves it. */
+  async function changeBody(change) {
     const fresh = await gh(`/issues/${state.number}`);
-    const body = BG.setChecks(fresh.body || '', changes);
+    const body = change(fresh.body || '');
     await gh(`/issues/${state.number}`, { method: 'PATCH', body: { body } });
     fresh.body = body;
     state.issue = fresh;
     state.items = BG.parseChecklist(body);
+  }
+
+  /**
+   * Releases a slot for the Aushilfen page: adds a checked release line below the shift's line
+   * (or checks it again if it is there). Visible on the page at once; nothing is sent.
+   */
+  function addRelease(afterKey, source, day, ranges, start, end) {
+    try {
+      BG.checkRelease(ranges, start, end);
+    } catch (error) {
+      state.error = error.message;
+      render();
+      return;
+    }
+    const key = BG.releaseKey(source, day, start, end);
+    run(async () => {
+      await changeBody((body) => (body.includes(`<!-- ${key} -->`)
+        ? BG.setChecks(body, { [key]: true })
+        : BG.addLineAfter(body, afterKey, BG.releaseLine(key))));
+      state.releaseForm = null;
+      state.info = `Für Aushilfen freigegeben: ${DAYS[day - 1]} ${start}–${end} – sofort auf der Aushilfen-Seite sichtbar.`;
+    });
+  }
+
+  function deleteRelease(key) {
+    run(() => changeBody((body) => BG.removeLine(body, key)));
   }
 
   function toggle(key, checked) {
@@ -433,11 +466,15 @@
         children !== undefined ? h('span', { class: 'muted small' }, `${children} Kinder`) : null),
       line ? h('p', { class: `status ${status}` }, text) : h('p', { class: 'muted small' }, 'Noch keine Auswertung – „Neu berechnen“ antippen.'),
       h('ul', { class: 'rows' },
-        sickItems.map((item) => h('li', { class: `row${item.checked ? ' sick' : ''}` },
-          h('span', {}, item.label.replace(/\s+krank$/, '')),
-          h('label', { class: 'toggle' }, h('span', { class: 'small' }, 'krank'),
-            h('input', { type: 'checkbox', class: 'switch', checked: item.checked, disabled,
-              onchange: (event) => toggle(item.key, event.target.checked) })))),
+        sickItems.flatMap((item) => [
+          h('li', { class: `row${item.checked ? ' sick' : ''}` },
+            h('span', {}, item.label.replace(/\s+krank$/, '')),
+            h('label', { class: 'toggle' }, h('span', { class: 'small' }, 'krank'),
+              h('input', { type: 'checkbox', class: 'switch', checked: item.checked, disabled,
+                onchange: (event) => toggle(item.key, event.target.checked) }))),
+          // A sick person's shift can be released for the Aushilfen page (without the name).
+          ...(item.checked ? renderReleases(day, `krank:${item.key.split(':')[1]}`, item.key, BG.labelRanges(item.label), disabled) : []),
+        ]),
         others,
         slotItem ? h('li', { class: 'row slot' },
           h('span', {}, slotItem.label.replace(/^Offene Aushilfe\s+/, 'Aushilfe ').replace(/:\s*(keine verfügbar|gefunden)$/, '')),
@@ -451,8 +488,60 @@
                 h('button', { type: 'button', class: slotValue === value ? 'active' : '', role: 'radio',
                   'aria-checked': String(slotValue === value), disabled: disabled || slotValue === value,
                   onclick: () => setSlot(day, value) }, label)))) : null,
+        slotItem ? renderReleases(day, 'aushilfe', slotKeys.gefunden, BG.labelRanges(slotItem.label), disabled) : null,
         !sickItems.length && !slotItem && !others.length ? h('li', { class: 'row muted' }, 'Keine Schichten') : null),
       renderChildren(childLists ? childLists.lists[String(day)] : null, childLists ? childLists.zeitpunkt : ''));
+  }
+
+  /**
+   * The release rows of one shift for the Aushilfen page: each released slot (switch = visible
+   * there, the Zusage it got, "Entfernen") and "+ Für Aushilfen freigeben" with a proposal.
+   */
+  function renderReleases(day, source, afterKey, ranges, disabled) {
+    const releases = state.items
+      .map((item) => ({ item, release: BG.parseReleaseKey(item.key) }))
+      .filter(({ release }) => release && release.day === day && release.source === source);
+    const rows = releases.map(({ item, release }) => {
+      const zusagen = BG.slotSubstitutes(state.comments, day, `${release.start}–${release.end}`);
+      let taken = h('span', { class: 'muted small' }, item.checked ? 'offen' : 'nicht sichtbar');
+      if (zusagen.length && source === 'aushilfe') {
+        // The ✕ for these Zusagen is on the open Aushilfe row above.
+        taken = h('span', { class: 'zusage' }, zusagen.map((zusage) => `✓ ${zusage.name}`).join(', '));
+      } else if (zusagen.length) {
+        taken = h('span', { class: 'zusagen' }, zusagen.map((zusage) => h('span', { class: 'zusage' },
+          `✓ ${zusage.name} ${zusage.from}–${zusage.to}`,
+          h('button', { type: 'button', class: 'remove', disabled, title: 'Zusage zurücknehmen',
+            'aria-label': `Zusage von ${zusage.name} zurücknehmen`, onclick: () => removeZusage(zusage, day) }, '✕'))));
+      }
+      return h('li', { class: 'row release' },
+        h('label', { class: 'toggle' },
+          h('input', { type: 'checkbox', class: 'switch', checked: item.checked, disabled,
+            title: 'Auf der Aushilfen-Seite sichtbar', onchange: (event) => toggle(item.key, event.target.checked) }),
+          h('span', {}, `Für Aushilfen ${release.start}–${release.end}`)),
+        taken,
+        h('button', { type: 'button', class: 'remove', disabled, title: 'Freigabe entfernen',
+          onclick: () => deleteRelease(item.key) }, 'Entfernen'));
+    });
+    const proposal = BG.proposeRelease(ranges, releases.map(({ release }) => release));
+    if (state.releaseForm === afterKey && ranges.length) {
+      const times = BG.timeOptions('08:30', '18:00', 15);
+      const start = proposal ? proposal.start : ranges[0].start;
+      const end = proposal ? proposal.end : ranges[0].end;
+      rows.push(h('li', { class: 'row release' },
+        h('form', { class: 'release-form', onsubmit: (event) => {
+          event.preventDefault();
+          addRelease(afterKey, source, day, ranges, event.target.elements.von.value, event.target.elements.bis.value);
+        } },
+        h('label', {}, 'von', h('select', { name: 'von' }, times.map((time) => h('option', { value: time, selected: time === start }, time)))),
+        h('label', {}, 'bis', h('select', { name: 'bis' }, times.map((time) => h('option', { value: time, selected: time === end }, time)))),
+        h('button', { type: 'submit', class: 'secondary', disabled }, 'Freigeben'),
+        h('button', { type: 'button', class: 'remove', onclick: () => { state.releaseForm = null; render(); } }, 'Abbrechen'))));
+    } else if (proposal) {
+      rows.push(h('li', { class: 'row release' },
+        h('button', { type: 'button', class: 'link-button', disabled, onclick: () => { state.releaseForm = afterKey; render(); } },
+          '+ Für Aushilfen freigeben')));
+    }
+    return rows;
   }
 
   /** The children of a day (first names, * = Eingewöhnung, "bis HH:MM" = early pick-up), collapsed. */
