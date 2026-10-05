@@ -105,11 +105,13 @@
    * @param {Array<object>} comments All issue comments, oldest first.
    * @param {{year: number, week: number}|null} [week] The issue's week, for a Zusage without "am".
    * @returns {{added: Array<object>, removed: Array<object>, comments: Array<object>,
-   *   withdrawn: Array<{name: string, day: number}>, changed: Array<string>}} Checklist items newly
-   *   checked / unchecked, comments by people written since the stored state, Zusagen sent before
-   *   and gone now (like withdrawn_substitutes() in Python), and Zusagen ("Name:Tag:HH:MM-HH:MM")
-   *   from older comments that were changed since. The last two only if the state stores
-   *   `zusagen` (states before that don't).
+   *   withdrawn: Array<{name: string, day: number}>, changed: Array<string>,
+   *   withdrawnDuties: Array<{day: number, from: string, to: string}>, changedDuties: Array<string>}}
+   *   Checklist items newly checked / unchecked, comments by people written since the stored state,
+   *   Zusagen sent before and gone now (like withdrawn_substitutes() in Python), and Zusagen
+   *   ("Name:Tag:HH:MM-HH:MM") from older comments that were changed since. The last two only if the
+   *   state stores `zusagen` (states before that don't). The same for Elterndienste
+   *   (withdrawn_parent_duties(), "Tag:HH:MM-HH:MM"), only if the state stores `elterndienste`.
    */
   function pendingChanges(items, comments, week = null) {
     const marker = latestMarker(comments, 'wochenstand');
@@ -125,6 +127,8 @@
       comments: comments.filter((comment) => !isBot(comment) && comment.id > seen),
       withdrawn: [],
       changed: [],
+      withdrawnDuties: [],
+      changedDuties: [],
     };
     if (marker && Array.isArray(marker.data.zusagen)) {
       const sent = new Set(marker.data.zusagen);
@@ -137,6 +141,21 @@
       }
       pending.withdrawn = [...withdrawn.values()].sort((a, b) => a.day - b.day || a.name.localeCompare(b.name));
       pending.changed = [...current].filter(([entry, id]) => !sent.has(entry) && id <= seen).map(([entry]) => entry).sort();
+    }
+    if (marker && Array.isArray(marker.data.elterndienste)) {
+      const sent = new Set(marker.data.elterndienste);
+      const current = parentDutyEntries(comments, week);
+      // A day with a new Elterndienst (e.g. changed times) has no withdrawn one, as in Python.
+      const daysWithNew = new Set([...current.keys()].filter((entry) => !sent.has(entry)).map((entry) => Number(entry.split(':')[0])));
+      pending.withdrawnDuties = [...sent]
+        .filter((entry) => !current.has(entry) && !daysWithNew.has(Number(entry.split(':')[0])))
+        .map((entry) => {
+          const [day, ...times] = entry.split(':');
+          const [from, to] = times.join(':').split('-');
+          return { day: Number(day), from, to };
+        })
+        .sort((a, b) => a.day - b.day || a.from.localeCompare(b.from));
+      pending.changedDuties = [...current].filter(([entry, id]) => !sent.has(entry) && id <= seen).map(([entry]) => entry).sort();
     }
     return pending;
   }
@@ -191,6 +210,26 @@
         const name = match[1][0].toUpperCase() + match[1].slice(1).toLowerCase();
         const pad = (time) => time.padStart(5, '0');
         for (const day of days) entries.set(`${name}:${day}:${pad(match[3])}-${pad(match[4])}`, comment.id);
+      }
+    }
+    return entries;
+  }
+
+  /**
+   * The added Elterndienste in the comments since the last reset, like parent_duty_entries() in Python.
+   * @param {Array<object>} comments All issue comments, oldest first.
+   * @param {{year: number, week: number}|null} week The issue's week, for an Elterndienst without "am".
+   * @returns {Map<string, number>} "Tag:HH:MM-HH:MM" -> id of the comment.
+   */
+  function parentDutyEntries(comments, week) {
+    const upTo = resetUpTo(comments);
+    const entries = new Map();
+    for (const comment of comments) {
+      if (isBot(comment) || comment.id <= upTo) continue;
+      for (const match of (comment.body || '').matchAll(ANY_PARENT_DUTY_RE)) {
+        const days = match[1] ? daysOf(match[1]) : [writtenDay(comment, week)].filter(Boolean);
+        const pad = (time) => time.padStart(5, '0');
+        for (const day of days) entries.set(`${day}:${pad(match[2])}-${pad(match[3])}`, comment.id);
       }
     }
     return entries;
@@ -297,6 +336,24 @@
     'gi',
   );
 
+  // "Elterndienst am <Tage> HH:MM-HH:MM", as written by the app.
+  const PARENT_DUTY_RE = new RegExp(
+    `Elterndienst\\s+am\\s+(${DAY_WORD}(?:\\s*,\\s*${DAY_WORD}|\\s+und\\s+${DAY_WORD})*)\\s+(\\d{1,2}:\\d{2})\\s*-\\s*(\\d{1,2}:\\d{2})`,
+    'gi',
+  );
+
+  // The same, with "am <Tage>" optional, like PARENT_DUTY in week_issue.py.
+  const ANY_PARENT_DUTY_RE = new RegExp(
+    `Elterndienst(?:\\s+am\\s+(${DAY_WORD}(?:\\s*,\\s*${DAY_WORD}|\\s+und\\s+${DAY_WORD})*))?\\s+(\\d{1,2}:\\d{2})\\s*-\\s*(\\d{1,2}:\\d{2})`,
+    'gi',
+  );
+
+  /** Weekdays 1-5 of a day list like "Montag, Mittwoch und Freitag". */
+  function daysOf(text) {
+    return [...text.matchAll(new RegExp(DAY_WORD, 'gi'))]
+      .map((word) => DAYS.findIndex((name) => name.toLowerCase() === word[0].toLowerCase()) + 1);
+  }
+
   function minutesOf(time) {
     const [hours, mins] = time.split(':').map(Number);
     return hours * 60 + mins;
@@ -350,6 +407,47 @@
     if (!days.includes(day)) throw new Error('Der Kommentar hat sich inzwischen geändert – bitte neu laden.');
     const rest = days.filter((other) => other !== day).map((other) => DAYS[other - 1]);
     const replacement = rest.length ? `${match[1]} springt ein am ${joinGerman(rest)} ${match[3]}-${match[4]}` : '';
+    return (body.slice(0, index) + replacement + body.slice(index + match[0].length)).trim();
+  }
+
+  /**
+   * The Elterndienste of one day from comments since the last "Alles zurücksetzen" (written with
+   * "am <Tage>", as the app does), to show them with ✕.
+   * @param {Array<object>} comments All issue comments, oldest first.
+   * @param {number} day Weekday 1-5.
+   * @returns {Array<{from: string, to: string, commentId: number, index: number}>}
+   *   `commentId` and `index` (position of the match in the comment) for withoutParentDutyDay().
+   */
+  function dayParentDuties(comments, day) {
+    const upTo = resetUpTo(comments);
+    const found = [];
+    for (const comment of comments) {
+      if (isBot(comment) || comment.id <= upTo) continue;
+      for (const match of (comment.body || '').matchAll(PARENT_DUTY_RE)) {
+        if (daysOf(match[1]).includes(day)) {
+          const pad = (time) => time.padStart(5, '0');
+          found.push({ from: pad(match[2]), to: pad(match[3]), commentId: comment.id, index: match.index });
+        }
+      }
+    }
+    return found;
+  }
+
+  /**
+   * A comment without one day of an Elterndienst, to take it back: the other days and the rest of
+   * the comment stay. An empty result means the comment can be deleted.
+   * @param {string} body The comment as it is now.
+   * @param {number} index Position of the Elterndienst in it (from dayParentDuties()).
+   * @param {number} day Weekday 1-5 to take out.
+   * @returns {string} The new comment, '' if nothing is left.
+   * @throws {Error} The comment no longer has that Elterndienst there (changed meanwhile).
+   */
+  function withoutParentDutyDay(body, index, day) {
+    const match = [...(body || '').matchAll(PARENT_DUTY_RE)].find((candidate) => candidate.index === index);
+    const days = match ? daysOf(match[1]) : [];
+    if (!days.includes(day)) throw new Error('Der Kommentar hat sich inzwischen geändert – bitte neu laden.');
+    const rest = days.filter((other) => other !== day).map((other) => DAYS[other - 1]);
+    const replacement = rest.length ? `Elterndienst am ${joinGerman(rest)} ${match[2]}-${match[3]}` : '';
     return (body.slice(0, index) + replacement + body.slice(index + match[0].length)).trim();
   }
 
@@ -502,6 +600,7 @@
     isBot,
     pendingChanges,
     substituteEntries,
+    parentDutyEntries,
     isoWeek,
     dateOf,
     weeksInYear,
@@ -512,6 +611,8 @@
     parentDutyComment,
     slotSubstitutes,
     withoutSubstituteDay,
+    dayParentDuties,
+    withoutParentDutyDay,
     timeOptions,
     splitDayLine,
     RELEASE_PREFIX,

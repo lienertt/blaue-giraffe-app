@@ -95,6 +95,42 @@ test('pendingChanges finds withdrawn and changed Zusagen', () => {
   assert.deepEqual(BG.pendingChanges(items, old, week).withdrawn, []);
 });
 
+test('pendingChanges finds withdrawn and changed Elterndienste', () => {
+  const items = BG.parseChecklist(BODY);
+  const state = { haken: [], kommentar: 12, zurueckgesetzt: false, elterndienste: ['1:12:00-16:00', '3:08:00-12:00', '4:08:00-10:00', '4:14:00-16:00'] };
+  const comments = [
+    person(10, 'Elterndienst am Montag 13:00-16:00'), // changed times on Monday, Wednesday gone
+    { ...person(11, 'Elterndienst 8:00-10:00'), created_at: '2026-11-05T09:00:00Z' }, // no "am": Thursday
+    bot(12, `<!-- wochenstand ${JSON.stringify(state)} -->`),
+  ];
+  const pending = BG.pendingChanges(items, comments, { year: 2026, week: 45 });
+  assert.deepEqual(pending.withdrawnDuties, [{ day: 3, from: '08:00', to: '12:00' }, { day: 4, from: '14:00', to: '16:00' }]);
+  assert.deepEqual(pending.changedDuties, ['1:13:00-16:00']);
+  // A state from before the Elterndienste were stored says nothing about them.
+  const old = [comments[0], bot(12, '<!-- wochenstand {"haken": [], "kommentar": 12, "zurueckgesetzt": false} -->')];
+  assert.deepEqual(BG.pendingChanges(items, old).withdrawnDuties, []);
+});
+
+test('dayParentDuties and withoutParentDutyDay take one day of an Elterndienst back', () => {
+  const comments = [
+    person(1, 'Elterndienst am Montag, Mittwoch 8:00-12:30'),
+    bot(2, '<!-- wochenstand {"haken": [], "kommentar": 1, "zurueckgesetzt": false} -->'),
+    person(3, 'Greta springt ein am Mittwoch 12:00-16:00\nElterndienst am Mittwoch 14:00-16:00'),
+  ];
+  assert.deepEqual(BG.dayParentDuties(comments, 3), [
+    { from: '08:00', to: '12:30', commentId: 1, index: 0 },
+    { from: '14:00', to: '16:00', commentId: 3, index: 42 },
+  ]);
+  assert.deepEqual(BG.dayParentDuties(comments, 2), []);
+  assert.equal(BG.withoutParentDutyDay(comments[0].body, 0, 3), 'Elterndienst am Montag 8:00-12:30');
+  assert.equal(BG.withoutParentDutyDay('Elterndienst am Freitag 09:00-12:00', 0, 5), '');
+  assert.equal(BG.withoutParentDutyDay(comments[2].body, 42, 3), 'Greta springt ein am Mittwoch 12:00-16:00');
+  assert.throws(() => BG.withoutParentDutyDay(comments[0].body, 0, 2), /geändert/);
+  // After "Alles zurücksetzen" older comments no longer count.
+  const reset = [comments[0], bot(2, '<!-- wochenstand {"haken": [], "kommentar": 1, "zurueckgesetzt": true} -->')];
+  assert.deepEqual(BG.dayParentDuties(reset, 1), []);
+});
+
 test('ISO weeks and titles', () => {
   assert.deepEqual(BG.isoWeek(new Date(2026, 9, 1)), { year: 2026, week: 40 });
   assert.deepEqual(BG.isoWeek(new Date(2027, 0, 1)), { year: 2026, week: 53 });

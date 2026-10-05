@@ -49,6 +49,7 @@
       Dora: { 1: '09:00-17:00', 2: '-', 3: '08:00-16:00', 4: '-', 5: '-' },
       Aushilfe: { 1: '-', 2: '✅ besetzt', 3: '-', 4: '-', 5: '09:00-15:00' },
       Greta: { 1: '-', 2: '-', 3: '-', 4: '-', 5: '-' },
+      Elterndienst: { 1: '-', 2: '-', 3: '08:00-12:00', 4: '-', 5: '-' },
     },
     kinderliste: {
       1: { anwesend: ['Jonas', 'Lia (bis 14:00)', 'Mats', 'Nele', 'Ole', 'Pia', 'Rosa', 'Theo', 'Vito', 'Wanda', 'Yuna*'], abwesend: ['Kian', 'Smilla'] },
@@ -66,10 +67,15 @@
     ],
     hinweise: ['⚠ Offene Aushilfe Fr, 06.11. 09:00–15:00 bringt keine Verbesserung – ohne sie müssten nicht mehr Kinder zu Hause bleiben.'],
   };
-  // Hanna's Zusage for Thursday was sent and its comment is gone: shown as withdrawn.
-  const stand = { haken: ['krank:Anna:1'], kommentar: 101, zurueckgesetzt: false, zusagen: ['Hanna:4:09:00-15:00'] };
+  // Hanna's Zusage for Thursday and the Elterndienst on Tuesday were sent and their comments are
+  // gone: shown as withdrawn. Wednesday's Elterndienst is still there (with ✕).
+  const stand = {
+    haken: ['krank:Anna:1'], kommentar: 101, zurueckgesetzt: false, zusagen: ['Hanna:4:09:00-15:00'],
+    elterndienste: ['2:08:00-12:00', '3:08:00-12:00'],
+  };
   const issue = { number: 45, title: '2026 KW45', state: 'open', body, html_url: 'https://github.com/' };
   const comments = [
+    { id: 100, user: { type: 'User' }, body: 'Elterndienst am Mittwoch 08:00-12:00' },
     { id: 101, user: { type: 'Bot' }, body: '```\n…\n```\n<!-- wochenstand ' + JSON.stringify(stand) + ' -->\n<!-- wochenansicht ' + JSON.stringify(view) + ' -->' },
     { id: 102, user: { type: 'User' }, body: 'Greta springt ein am Mittwoch 08:00-12:00' },
     { id: 103, user: { type: 'User' }, body: 'Dora springt ein am Freitag 09:00-15:00' },
