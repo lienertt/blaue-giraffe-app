@@ -41,7 +41,7 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
 - **Änderungen werden nur vorgemerkt.** Oben steht, was noch nicht verschickt ist – auch eine schon
   verschickte Zusage, die inzwischen zurückgenommen („− Zusage … zurückgenommen“) oder geändert wurde
   („✏️ Zusage geändert“), ebenso ein verschickter Elterndienst („− Elterndienst … entfällt“,
-  „✏️ Elterndienst geändert“); „Neu berechnen“ meldet sie dann mit eigener Nachricht. Erst
+  „✏️ Elterndienst geändert“); „Neu berechnen“ schickt dann den neuen Stand der Woche (geänderte Tage mit ✏️). Erst
   **„Neu berechnen und senden“** startet den Workflow; nach etwa einer Minute erscheint das Ergebnis.
 - **„👁 Nur berechnen“**: dieselbe Auswertung als Vorschau – unter „Letzter Lauf“ steht, was verschickt
   würde; verschickt wird nichts, die Änderungen bleiben „noch nicht verschickt“. Erscheint, sobald die
