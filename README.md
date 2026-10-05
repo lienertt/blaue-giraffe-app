@@ -40,7 +40,8 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
   (`<!-- freigabe:… -->`) unter die Schicht; sie wirkt sofort und zählt nicht als Änderung der Woche.
 - **Änderungen werden nur vorgemerkt.** Oben steht, was noch nicht verschickt ist – auch eine schon
   verschickte Zusage, die inzwischen zurückgenommen („− Zusage … zurückgenommen“) oder geändert wurde
-  („✏️ Zusage geändert“); „Neu berechnen“ meldet sie dann mit eigener Nachricht. Erst
+  („✏️ Zusage geändert“), ebenso ein verschickter Elterndienst („− Elterndienst … entfällt“,
+  „✏️ Elterndienst geändert“); „Neu berechnen“ meldet sie dann mit eigener Nachricht. Erst
   **„Neu berechnen und senden“** startet den Workflow; nach etwa einer Minute erscheint das Ergebnis.
 - **„👁 Nur berechnen“**: dieselbe Auswertung als Vorschau – unter „Letzter Lauf“ steht, was verschickt
   würde; verschickt wird nichts, die Änderungen bleiben „noch nicht verschickt“. Erscheint, sobald die
@@ -53,7 +54,8 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
   (`Greta springt ein am Mittwoch 08:00-16:30`) in die Wochen-Issue.
 - **„Elterndienst eintragen“**: Tage, von–bis – schreibt `Elterndienst am Mittwoch 08:00-12:30`. Hilft
   nur bei einer Kernteam-Kraft allein (8 → 10 Kinder); sonst sagt die Antwort „bringt keine
-  Verbesserung“.
+  Verbesserung“. Am Tag steht er dann als „Elterndienst Uhrzeit“ mit **✕** zum Entfernen (nimmt nur
+  diesen Tag aus dem Kommentar, ein leerer Kommentar wird gelöscht).
 - **„Letzter Lauf“**: was verschickt wurde (zum Aufklappen), Hinweise und Fehler.
 
 Was die Häkchen und Kommentare genau bewirken, steht in `docs/handy.md` im Hauptrepo.

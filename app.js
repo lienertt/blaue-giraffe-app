@@ -304,6 +304,21 @@
     });
   }
 
+  /** Takes one day of an Elterndienst back: edits its comment, or deletes it if nothing else is left. */
+  function removeParentDuty(duty, day) {
+    const when = `${DAYS[day - 1]} ${duty.from}–${duty.to}`;
+    if (!confirm(`Elterndienst am ${when} entfernen? Verschickt wird erst beim nächsten „Neu berechnen“.`)) return;
+    run(async () => {
+      const path = `/issues/comments/${duty.commentId}`;
+      const fresh = await gh(path);
+      const body = BG.withoutParentDutyDay(fresh.body || '', duty.index, day);
+      if (body) await gh(path, { method: 'PATCH', body: { body } });
+      else await gh(path, { method: 'DELETE' });
+      await loadWeek();
+      state.info = `Elterndienst am ${when} entfernt. Verschickt wird beim nächsten „Neu berechnen“.`;
+    });
+  }
+
   async function submitParentDuty(form) {
     const days = [...form.querySelectorAll('input[name="tag"]:checked')].map((input) => Number(input.value));
     let text;
@@ -398,7 +413,7 @@
   function renderControls() {
     const pending = BG.pendingChanges(state.items, state.comments, weekOf(state.issue));
     const count = pending.added.length + pending.removed.length + pending.comments.length
-      + pending.withdrawn.length + pending.changed.length;
+      + pending.withdrawn.length + pending.changed.length + pending.withdrawnDuties.length + pending.changedDuties.length;
     const disabled = state.busy || Boolean(state.waiting) || !state.items.length;
     const fromTodayItem = state.items.find((item) => item.key === KEYS.fromToday);
     const lines = [
@@ -409,6 +424,11 @@
       ...pending.changed.map((entry) => {
         const [name, day, ...times] = entry.split(':');
         return `✏️ Zusage geändert: ${name} ${SHORT_DAYS[Number(day) - 1]} ${times.join(':').replace('-', '–')}`;
+      }),
+      ...pending.withdrawnDuties.map(({ day, from, to }) => `− Elterndienst ${SHORT_DAYS[day - 1]} ${from}–${to} entfällt`),
+      ...pending.changedDuties.map((entry) => {
+        const [day, ...times] = entry.split(':');
+        return `✏️ Elterndienst geändert: ${SHORT_DAYS[Number(day) - 1]} ${times.join(':').replace('-', '–')}`;
       }),
     ];
     return h('section', { class: 'card controls' },
@@ -455,9 +475,12 @@
     const disabled = state.busy || Boolean(state.waiting);
     const sickItems = items.filter((item) => item.key.startsWith('krank:'));
     const checklistNames = new Set(sickItems.map((item) => item.key.split(':')[1]));
+    // Elterndienste from comments get their own row with ✕ instead of the plan's read-only row.
+    const duties = BG.dayParentDuties(state.comments, day);
     const others = view && view.plan
       ? Object.entries(view.plan)
-        .filter(([name, cells]) => !checklistNames.has(name) && name !== 'Aushilfe' && cells[String(day)] && cells[String(day)] !== '-')
+        .filter(([name, cells]) => !checklistNames.has(name) && name !== 'Aushilfe' && !(duties.length && name === 'Elterndienst')
+          && cells[String(day)] && cells[String(day)] !== '-')
         .map(([name, cells]) => h('li', { class: 'row readonly' }, h('span', {}, name), h('span', { class: 'muted' }, cells[String(day)])))
       : [];
     const slotKeys = { keine: `keine-aushilfe:${day}`, gefunden: `aushilfe-gefunden:${day}` };
@@ -481,6 +504,11 @@
           ...(item.checked ? renderReleases(day, `krank:${item.key.split(':')[1]}`, item.key, BG.labelRanges(item.label), disabled) : []),
         ]),
         others,
+        duties.map((duty) => h('li', { class: 'row' },
+          h('span', {}, 'Elterndienst'),
+          h('span', { class: 'zusage' }, `${duty.from}–${duty.to}`,
+            h('button', { type: 'button', class: 'remove', disabled, title: 'Elterndienst entfernen',
+              'aria-label': `Elterndienst ${duty.from}–${duty.to} entfernen`, onclick: () => removeParentDuty(duty, day) }, '✕')))),
         slotItem ? h('li', { class: 'row slot' },
           h('span', {}, slotItem.label.replace(/^Offene Aushilfe\s+/, 'Aushilfe ').replace(/:\s*(keine verfügbar|gefunden)$/, '')),
           zusagen.length
@@ -494,7 +522,7 @@
                   'aria-checked': String(slotValue === value), disabled: disabled || slotValue === value,
                   onclick: () => setSlot(day, value) }, label)))) : null,
         slotItem ? renderReleases(day, 'aushilfe', slotKeys.gefunden, BG.labelRanges(slotItem.label), disabled) : null,
-        !sickItems.length && !slotItem && !others.length ? h('li', { class: 'row muted' }, 'Keine Schichten') : null),
+        !sickItems.length && !slotItem && !others.length && !duties.length ? h('li', { class: 'row muted' }, 'Keine Schichten') : null),
       renderChildren(childLists ? childLists.lists[String(day)] : null, childLists ? childLists.zeitpunkt : ''));
   }
 
