@@ -6,7 +6,10 @@
 
   const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
   const SHORT_DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
-  const KEYS = { recalc: 'neu-berechnen', preview: 'nur-berechnen', reset: 'zuruecksetzen', fromToday: 'ab-heute', fromTomorrow: 'ab-morgen', children: 'kinder-aktualisieren' };
+  const KEYS = { recalc: 'neu-berechnen', preview: 'nur-berechnen', reset: 'zuruecksetzen', fromToday: 'ab-heute', fromTomorrow: 'ab-morgen', children: 'kinder-aktualisieren', refresh: 'aus-famly' };
+  // Added by the workflow's "Aus Famly aktualisieren" to a line it keeps although its shift is gone
+  // (GONE_MARK in week_issue.py).
+  const GONE_MARK = ' (nicht mehr in Famly)';
   const SETTING_KEYS = new Set(Object.values(KEYS));
   // "- [ ] <text> <!-- key -->", like CHECKBOX in week_issue.py.
   const LINE_RE = /^(\s*[-*] \[)([ xX])(\] )(.*?)\s*<!-- (\S+) -->\s*$/;
@@ -53,6 +56,16 @@
     });
     if (missing.size) throw new Error(`Zeile nicht gefunden: ${[...missing].join(', ')}`);
     return lines.join(newline);
+  }
+
+  /**
+   * A checklist label without the "nicht mehr in Famly" mark, and whether it had it.
+   * @param {string} label From parseChecklist(), e.g. "Anna 08:00–14:00 (nicht mehr in Famly) krank".
+   * @returns {{text: string, gone: boolean}}
+   */
+  function goneLabel(label) {
+    const gone = (label || '').includes(GONE_MARK);
+    return { text: gone ? label.replace(GONE_MARK, '') : label || '', gone };
   }
 
   /**
@@ -619,6 +632,7 @@
     parseChecklist,
     setChecks,
     sendFrom,
+    goneLabel,
     sendFromChecks,
     latestMarker,
     latestChildren,

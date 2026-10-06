@@ -464,6 +464,11 @@
         ? h('button', { type: 'button', class: 'secondary wide', disabled,
           onclick: () => trigger(KEYS.children, 'Kinderbelegung aktualisiert') }, '👶 Kinderbelegung aktualisieren')
         : null,
+      // Only in week issues whose checklist has the line (the workflow adds it to older ones on its next run).
+      state.items.some((item) => item.key === KEYS.refresh)
+        ? h('button', { type: 'button', class: 'secondary wide', disabled,
+          onclick: () => trigger(KEYS.refresh, 'Aus Famly aktualisiert') }, '🔄 Aus Famly aktualisieren')
+        : null,
       h('button', { type: 'button', class: 'secondary danger wide', disabled,
         onclick: () => {
           if (confirm('Alle Häkchen und Kommentare dieser Woche verwerfen und die Liste frisch aus Famly schreiben? Verschickt wird dabei nichts.')) {
@@ -475,6 +480,13 @@
   function describe(item) {
     const day = item.day ? `${SHORT_DAYS[item.day - 1]}: ` : '';
     return `${day}${item.label}`;
+  }
+
+  /** The note under a line that "Aus Famly aktualisieren" kept although Famly no longer has its shift. */
+  function goneNote(label) {
+    return BG.goneLabel(label).gone
+      ? h('small', { class: 'gone-note block' }, 'nicht mehr in Famly – bleibt wegen Häkchen oder Zusage')
+      : null;
   }
 
   function renderDay(day, week, view, childLists) {
@@ -506,8 +518,8 @@
       line ? h('p', { class: `status ${status}` }, text) : h('p', { class: 'muted small' }, 'Noch keine Auswertung – „Neu berechnen“ antippen.'),
       h('ul', { class: 'rows' },
         sickItems.flatMap((item) => [
-          h('li', { class: `row${item.checked ? ' sick' : ''}` },
-            h('span', {}, item.label.replace(/\s+krank$/, '')),
+          h('li', { class: `row${item.checked ? ' sick' : ''}${BG.goneLabel(item.label).gone ? ' gone' : ''}` },
+            h('span', {}, BG.goneLabel(item.label).text.replace(/\s+krank$/, ''), goneNote(item.label)),
             h('label', { class: 'toggle' }, h('span', { class: 'small' }, 'krank'),
               h('input', { type: 'checkbox', class: 'switch', checked: item.checked, disabled,
                 onchange: (event) => toggle(item.key, event.target.checked) }))),
@@ -520,8 +532,9 @@
           h('span', { class: 'zusage' }, `${duty.from}–${duty.to}`,
             h('button', { type: 'button', class: 'remove', disabled, title: 'Elterndienst entfernen',
               'aria-label': `Elterndienst ${duty.from}–${duty.to} entfernen`, onclick: () => removeParentDuty(duty, day) }, '✕')))),
-        slotItem ? h('li', { class: 'row slot' },
-          h('span', {}, slotItem.label.replace(/^Offene Aushilfe\s+/, 'Aushilfe ').replace(/:\s*(keine verfügbar|gefunden)$/, '')),
+        slotItem ? h('li', { class: `row slot${BG.goneLabel(slotItem.label).gone ? ' gone' : ''}` },
+          h('span', {}, BG.goneLabel(slotItem.label).text.replace(/^Offene Aushilfe\s+/, 'Aushilfe ').replace(/:\s*(keine verfügbar|gefunden)$/, ''),
+            goneNote(slotItem.label)),
           zusagen.length
             ? h('span', { class: 'zusagen' }, zusagen.map((zusage) => h('span', { class: 'zusage' },
               `✓ ${zusage.name} ${zusage.from}–${zusage.to}`,
@@ -651,7 +664,7 @@
         h('p', { class: 'muted' }, 'Noch keine Auswertung mit Zusammenfassung. Nach dem nächsten „Neu berechnen“ steht sie hier.'));
     }
     const when = new Date(view.zeitpunkt);
-    const modes = { full: 'Wochenmeldung', recalculate: 'Neu berechnet', preview: 'Vorschau', reset: 'Zurückgesetzt' };
+    const modes = { full: 'Wochenmeldung', recalculate: 'Neu berechnet', preview: 'Vorschau', reset: 'Zurückgesetzt', refresh: 'Aus Famly aktualisiert' };
     const preview = view.modus === 'preview';
     return h('section', { class: 'card' },
       h('h2', {}, 'Letzter Lauf'),

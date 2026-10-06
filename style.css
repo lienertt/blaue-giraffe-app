@@ -215,6 +215,8 @@ button:disabled { opacity: 0.5; }
 }
 .row:first-child { border-top: 0; }
 .row.sick { background: var(--sick-soft); margin: 0 -10px; padding: 8px 10px; border-radius: 10px; }
+.row.gone { background: var(--warn-soft); margin: 0 -10px; padding: 8px 10px; border-radius: 10px; }
+.gone-note { color: var(--warn); font-size: 0.78rem; }
 .row.readonly span:first-child::after { content: " · Aushilfe/Dienst"; color: var(--muted); font-size: 0.8rem; }
 .row.slot { flex-wrap: wrap; }
 .toggle { display: flex; align-items: center; gap: 8px; }
