@@ -416,6 +416,8 @@
       + pending.withdrawn.length + pending.changed.length + pending.withdrawnDuties.length + pending.changedDuties.length;
     const disabled = state.busy || Boolean(state.waiting) || !state.items.length;
     const fromTodayItem = state.items.find((item) => item.key === KEYS.fromToday);
+    const hasFromTomorrow = state.items.some((item) => item.key === KEYS.fromTomorrow);
+    const sendFrom = BG.sendFrom(state.items);
     const lines = [
       ...pending.added.map((item) => `+ ${describe(item)}`),
       ...pending.removed.map((item) => `− ${describe(item)} (zurückgenommen, ohne eigene Nachricht)`),
@@ -438,10 +440,19 @@
           ? [h('p', { class: 'pending-title' }, `${count} ${count === 1 ? 'Änderung' : 'Änderungen'} noch nicht verschickt:`),
             h('ul', { class: 'pending-list' }, lines.map((line) => h('li', {}, line)))]
           : h('p', { class: 'muted' }, 'Alles verschickt – keine offenen Änderungen.')),
-      fromTodayItem ? h('label', { class: 'switch-row' },
-        h('span', {}, 'Versenden ab heute', h('small', { class: 'muted block' }, 'sonst für die ganze Woche')),
-        h('input', { type: 'checkbox', class: 'switch', checked: fromTodayItem.checked, disabled,
-          onchange: (event) => toggle(KEYS.fromToday, event.target.checked) })) : null,
+      // "ab morgen" only in week issues whose checklist has the line (the workflow adds it on its next run).
+      hasFromTomorrow
+        ? h('div', { class: 'send-from' },
+          h('span', {}, 'Versenden', h('small', { class: 'muted' }, ' – für welche Tage die Nachrichten gelten')),
+          h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Versenden' },
+            [['woche', 'ganze Woche'], ['heute', 'ab heute'], ['morgen', 'ab morgen']].map(([value, label]) =>
+              h('button', { type: 'button', class: sendFrom === value ? 'active' : '', role: 'radio',
+                'aria-checked': String(sendFrom === value), disabled: disabled || sendFrom === value,
+                onclick: () => run(() => applyChecks(BG.sendFromChecks(value, state.items))) }, label))))
+        : fromTodayItem ? h('label', { class: 'switch-row' },
+          h('span', {}, 'Versenden ab heute', h('small', { class: 'muted block' }, 'sonst für die ganze Woche')),
+          h('input', { type: 'checkbox', class: 'switch', checked: fromTodayItem.checked, disabled,
+            onchange: (event) => toggle(KEYS.fromToday, event.target.checked) })) : null,
       h('button', { type: 'button', class: 'primary wide', disabled, onclick: () => trigger(KEYS.recalc, 'Neu berechnet') },
         count ? `Neu berechnen und senden (${count})` : 'Neu berechnen und senden'),
       // Only in week issues whose checklist has the line (the workflow adds it to older ones on its next run).
@@ -646,7 +657,7 @@
       h('h2', {}, 'Letzter Lauf'),
       h('p', { class: 'small' }, `${modes[view.modus] || view.modus} · ${isNaN(when) ? view.zeitpunkt : when.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })} · `,
         view.versendet ? h('b', {}, 'verschickt') : h('span', { class: 'muted' }, 'nichts verschickt'),
-        view.ab_heute ? ' · ab heute' : ''),
+        view.ab_morgen ? ' · ab morgen' : view.ab_heute ? ' · ab heute' : ''),
       view.fehler && view.fehler.length ? h('ul', { class: 'problems' }, view.fehler.map((text) => h('li', {}, `❌ ${text}`))) : null,
       view.hinweise && view.hinweise.length ? h('ul', { class: 'hints' }, view.hinweise.map((text) => h('li', {}, text))) : null,
       preview

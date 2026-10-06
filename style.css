@@ -161,6 +161,9 @@ button:disabled { opacity: 0.5; }
 .pending p { margin: 0; }
 
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.send-from { display: grid; gap: 6px; }
+.send-from .segmented { display: flex; }
+.send-from .segmented button { flex: 1; white-space: nowrap; }
 
 .switch {
   appearance: none;

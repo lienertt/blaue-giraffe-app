@@ -6,7 +6,7 @@
 
   const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
   const SHORT_DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
-  const KEYS = { recalc: 'neu-berechnen', preview: 'nur-berechnen', reset: 'zuruecksetzen', fromToday: 'ab-heute', children: 'kinder-aktualisieren' };
+  const KEYS = { recalc: 'neu-berechnen', preview: 'nur-berechnen', reset: 'zuruecksetzen', fromToday: 'ab-heute', fromTomorrow: 'ab-morgen', children: 'kinder-aktualisieren' };
   const SETTING_KEYS = new Set(Object.values(KEYS));
   // "- [ ] <text> <!-- key -->", like CHECKBOX in week_issue.py.
   const LINE_RE = /^(\s*[-*] \[)([ xX])(\] )(.*?)\s*<!-- (\S+) -->\s*$/;
@@ -53,6 +53,29 @@
     });
     if (missing.size) throw new Error(`Zeile nicht gefunden: ${[...missing].join(', ')}`);
     return lines.join(newline);
+  }
+
+  /**
+   * Where the messages start, by the "Versenden ab …" settings; "ab morgen" wins, as in Python.
+   * @param {Array<object>} items From parseChecklist().
+   * @returns {string} "woche", "heute" or "morgen".
+   */
+  function sendFrom(items) {
+    const checked = (key) => items.some((item) => item.key === key && item.checked);
+    if (checked(KEYS.fromTomorrow)) return 'morgen';
+    return checked(KEYS.fromToday) ? 'heute' : 'woche';
+  }
+
+  /**
+   * The checkbox changes for setChecks() that select one "Versenden ab …" value; only lines the
+   * checklist has are touched.
+   * @param {string} value "woche", "heute" or "morgen".
+   * @param {Array<object>} items From parseChecklist().
+   * @returns {Object<string, boolean>}
+   */
+  function sendFromChecks(value, items) {
+    const wanted = { [KEYS.fromToday]: value === 'heute', [KEYS.fromTomorrow]: value === 'morgen' };
+    return Object.fromEntries(Object.entries(wanted).filter(([key]) => items.some((item) => item.key === key)));
   }
 
   /**
@@ -595,6 +618,8 @@
     SETTING_KEYS,
     parseChecklist,
     setChecks,
+    sendFrom,
+    sendFromChecks,
     latestMarker,
     latestChildren,
     isBot,

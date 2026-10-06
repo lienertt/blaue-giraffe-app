@@ -28,13 +28,14 @@
     '- [x] Für Aushilfen freigegeben: Fr 09:00–15:00 <!-- freigabe:aushilfe:5:09:00-15:00 -->', '',
     '### Woche', '',
     '- [ ] Versenden ab heute (sonst die ganze Woche) <!-- ab-heute -->',
+    '- [x] Versenden ab morgen (heute nicht mehr) <!-- ab-morgen -->',
     '- [ ] Nur berechnen – Vorschau, nichts verschickt (Häkchen setzen oder entfernen) <!-- nur-berechnen -->',
     '- [ ] Neu berechnen und senden (Häkchen setzen oder entfernen) <!-- neu-berechnen -->',
     '- [ ] Kinderbelegung aktualisieren – nur die Kinder je Tag, nichts verschickt (Häkchen setzen oder entfernen) <!-- kinder-aktualisieren -->',
     '- [ ] Alles zurücksetzen – frischer Stand aus Famly <!-- zuruecksetzen -->', '',
   ].join('\n');
   const view = {
-    woche: '2026 KW45', zeitpunkt: '2026-11-02T07:40', modus: 'recalculate', ab_heute: false,
+    woche: '2026 KW45', zeitpunkt: '2026-11-02T07:40', modus: 'recalculate', ab_heute: false, ab_morgen: true,
     tage: {
       1: '🟠 Mo 08:15 - 17:00 | ab 14:00: 🔺 max. 8 Kinder (10 angemeldet) | 🍽️  Mittagsdienst nötig',
       2: '🟢 Di 08:00 - 16:00 | 🍽️  Mittagsdienst nötig',
