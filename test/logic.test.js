@@ -131,6 +131,18 @@ test('dayParentDuties and withoutParentDutyDay take one day of an Elterndienst b
   assert.deepEqual(BG.dayParentDuties(reset, 1), []);
 });
 
+test('sendFrom and sendFromChecks: whole week, from today or from tomorrow', () => {
+  const both = '- [ ] Versenden ab heute <!-- ab-heute -->\n- [ ] Versenden ab morgen <!-- ab-morgen -->';
+  const items = (body) => BG.parseChecklist(body);
+  assert.equal(BG.sendFrom(items(both)), 'woche');
+  assert.equal(BG.sendFrom(items(BG.setChecks(both, { 'ab-heute': true }))), 'heute');
+  assert.equal(BG.sendFrom(items(BG.setChecks(both, { 'ab-heute': true, 'ab-morgen': true }))), 'morgen');
+  assert.deepEqual(BG.sendFromChecks('morgen', items(both)), { 'ab-heute': false, 'ab-morgen': true });
+  assert.deepEqual(BG.sendFromChecks('woche', items(both)), { 'ab-heute': false, 'ab-morgen': false });
+  // An older checklist without "ab morgen" only gets "ab heute" set.
+  assert.deepEqual(BG.sendFromChecks('heute', items('- [ ] Versenden ab heute <!-- ab-heute -->')), { 'ab-heute': true });
+});
+
 test('ISO weeks and titles', () => {
   assert.deepEqual(BG.isoWeek(new Date(2026, 9, 1)), { year: 2026, week: 40 });
   assert.deepEqual(BG.isoWeek(new Date(2027, 0, 1)), { year: 2026, week: 53 });

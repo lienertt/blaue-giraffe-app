@@ -46,7 +46,9 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
 - **„👁 Nur berechnen“**: dieselbe Auswertung als Vorschau – unter „Letzter Lauf“ steht, was verschickt
   würde; verschickt wird nichts, die Änderungen bleiben „noch nicht verschickt“. Erscheint, sobald die
   Wochen-Issue den Schalter hat (neue Wochen; ältere bekommen ihn beim nächsten Lauf).
-- **„Versenden ab heute“**: sonst gelten die Nachrichten für die ganze Woche.
+- **„Versenden: ganze Woche / ab heute / ab morgen“**: für welche Tage die Nachrichten gelten. Setzt in der
+  Wochen-Issue höchstens eins der Häkchen „Versenden ab heute“ / „ab morgen“; Wochen-Issues ohne die
+  Zeile „ab morgen“ (bis zu ihrem nächsten Lauf) zeigen nur den Schalter „Versenden ab heute“.
 - **„👶 Kinderbelegung aktualisieren“**: holt nur die Kinder je Tag frisch aus Famly (Stand-Uhrzeit in
   jedem Tag); nichts wird neu berechnet oder verschickt. Erscheint, sobald die Wochen-Issue den
   Schalter hat (neue Wochen, sonst einmal „Alles zurücksetzen“).
