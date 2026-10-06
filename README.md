@@ -52,6 +52,11 @@ Adresse: <https://lienertt.github.io/blaue-giraffe-app/>
 - **„👶 Kinderbelegung aktualisieren“**: holt nur die Kinder je Tag frisch aus Famly (Stand-Uhrzeit in
   jedem Tag); nichts wird neu berechnet oder verschickt. Erscheint, sobald die Wochen-Issue den
   Schalter hat (neue Wochen, sonst einmal „Alles zurücksetzen“).
+- **„🔄 Aus Famly aktualisieren“**: schreibt die Liste der Wochen-Issue neu aus Famly; Häkchen, Freigaben
+  und Zusagen bleiben. Zeilen, deren Schicht in Famly weggefallen ist, die aber noch ein Häkchen oder
+  eine Zusage haben, bleiben stehen und sind gelb hinterlegt („nicht mehr in Famly“). Nichts wird
+  verschickt. Erscheint, sobald die Wochen-Issue den Schalter hat (neue Wochen, ältere nach ihrem
+  nächsten Lauf).
 - **„Aushilfe mit Namen eintragen“**: Vorname, Tage, von–bis – schreibt einen Kommentar
   (`Greta springt ein am Mittwoch 08:00-16:30`) in die Wochen-Issue.
 - **„Elterndienst eintragen“**: Tage, von–bis – schreibt `Elterndienst am Mittwoch 08:00-12:30`. Hilft
