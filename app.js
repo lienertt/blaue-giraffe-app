@@ -489,6 +489,10 @@
       : null;
   }
 
+  // Plan rows the day card doesn't list: open Aushilfe slots have their own row, and a Mittagsdienst
+  // the team asked for (work tag MD) already shows as "Mittagsdienst nötig" in the day line.
+  const HIDDEN_PLAN_ROWS = new Set(['Aushilfe', 'Mittagsdienst']);
+
   function renderDay(day, week, view, childLists) {
     const items = state.items.filter((item) => item.day === day);
     const dateText = week ? formatDate(BG.dateOf(week.year, week.week, day)) : '';
@@ -502,7 +506,7 @@
     const duties = BG.dayParentDuties(state.comments, day);
     const others = view && view.plan
       ? Object.entries(view.plan)
-        .filter(([name, cells]) => !checklistNames.has(name) && name !== 'Aushilfe' && !(duties.length && name === 'Elterndienst')
+        .filter(([name, cells]) => !checklistNames.has(name) && !HIDDEN_PLAN_ROWS.has(name) && !(duties.length && name === 'Elterndienst')
           && cells[String(day)] && cells[String(day)] !== '-')
         .map(([name, cells]) => h('li', { class: 'row readonly' }, h('span', {}, name), h('span', { class: 'muted' }, cells[String(day)])))
       : [];
