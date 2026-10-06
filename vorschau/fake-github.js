@@ -18,6 +18,8 @@
     '- [x] Offene Aushilfe 12:00–16:00: gefunden <!-- aushilfe-gefunden:2 -->', '',
     '### Mittwoch, 04.11.', '',
     '- [ ] Dora 08:00–16:00 krank <!-- krank:Dora:3 -->',
+    '- [ ] Offene Aushilfe 08:00–12:00 (nicht mehr in Famly): keine verfügbar <!-- keine-aushilfe:3 -->',
+    '- [ ] Offene Aushilfe 08:00–12:00 (nicht mehr in Famly): gefunden <!-- aushilfe-gefunden:3 -->',
     '- [ ] Bea 09:00–16:00 krank <!-- krank:Bea:3 -->', '',
     '### Donnerstag, 05.11.', '',
     'Keine Schichten.', '',
@@ -32,6 +34,7 @@
     '- [ ] Nur berechnen – Vorschau, nichts verschickt (Häkchen setzen oder entfernen) <!-- nur-berechnen -->',
     '- [ ] Neu berechnen und senden (Häkchen setzen oder entfernen) <!-- neu-berechnen -->',
     '- [ ] Kinderbelegung aktualisieren – nur die Kinder je Tag, nichts verschickt (Häkchen setzen oder entfernen) <!-- kinder-aktualisieren -->',
+    '- [ ] Aus Famly aktualisieren – Liste neu, Häkchen und Zusagen bleiben (Häkchen setzen oder entfernen) <!-- aus-famly -->',
     '- [ ] Alles zurücksetzen – frischer Stand aus Famly <!-- zuruecksetzen -->', '',
   ].join('\n');
   const view = {

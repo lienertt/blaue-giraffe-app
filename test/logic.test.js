@@ -143,6 +143,14 @@ test('sendFrom and sendFromChecks: whole week, from today or from tomorrow', () 
   assert.deepEqual(BG.sendFromChecks('heute', items('- [ ] Versenden ab heute <!-- ab-heute -->')), { 'ab-heute': true });
 });
 
+test('goneLabel strips the "nicht mehr in Famly" mark', () => {
+  assert.deepEqual(BG.goneLabel('Anna 08:00–14:00 (nicht mehr in Famly) krank'), { text: 'Anna 08:00–14:00 krank', gone: true });
+  assert.deepEqual(BG.goneLabel('Offene Aushilfe 12:00–16:00: gefunden'), { text: 'Offene Aushilfe 12:00–16:00: gefunden', gone: false });
+  // The toggle is no change of the week.
+  const items = BG.parseChecklist('- [x] Aus Famly aktualisieren <!-- aus-famly -->');
+  assert.deepEqual(BG.pendingChanges(items, []).added, []);
+});
+
 test('ISO weeks and titles', () => {
   assert.deepEqual(BG.isoWeek(new Date(2026, 9, 1)), { year: 2026, week: 40 });
   assert.deepEqual(BG.isoWeek(new Date(2027, 0, 1)), { year: 2026, week: 53 });
