@@ -8,6 +8,8 @@
   --accent-ink: #ffffff;
   --green: #1f8a4c;
   --green-soft: #e3f4ea;
+  --yellow: #b89600;
+  --yellow-soft: #fdf8d3;
   --orange: #c26a00;
   --orange-soft: #fdf0dd;
   --red: #c0352b;
@@ -30,6 +32,8 @@
     --accent-ink: #0d1520;
     --green: #5fd18f;
     --green-soft: #173325;
+    --yellow: #f0d84a;
+    --yellow-soft: #33300f;
     --orange: #ffb35c;
     --orange-soft: #3a2a14;
     --red: #ff7b70;
@@ -193,6 +197,7 @@ button:disabled { opacity: 0.5; }
 
 .day { border-left: 5px solid var(--line); }
 .day.gruen { border-left-color: var(--green); }
+.day.gelb { border-left-color: var(--yellow); }
 .day.orange { border-left-color: var(--orange); }
 .day.rot { border-left-color: var(--red); }
 .day.warnung { border-left-color: var(--warn); }
@@ -200,6 +205,7 @@ button:disabled { opacity: 0.5; }
 
 .status { margin: 0 0 8px; padding: 6px 10px; border-radius: 10px; font-size: 0.92rem; }
 .status.gruen { background: var(--green-soft); }
+.status.gelb { background: var(--yellow-soft); }
 .status.orange { background: var(--orange-soft); }
 .status.rot { background: var(--red-soft); }
 .status.warnung { background: var(--warn-soft); }

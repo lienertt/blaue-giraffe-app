@@ -499,10 +499,10 @@
 
   /**
    * Splits an evaluated day line ("🟠 Mo 08:00 - 17:00 | ab 12:00: …") into status and text.
-   * @returns {{status: string, text: string}} status: "gruen", "orange", "rot", "warnung" or "".
+   * @returns {{status: string, text: string}} status: "gruen", "gelb", "orange", "rot", "warnung" or "".
    */
   function splitDayLine(line) {
-    const statuses = { '🟢': 'gruen', '🟠': 'orange', '🔴': 'rot', '⚠️': 'warnung' };
+    const statuses = { '🟢': 'gruen', '🟡': 'gelb', '🟠': 'orange', '🔴': 'rot', '⚠️': 'warnung' };
     for (const [emoji, status] of Object.entries(statuses)) {
       if ((line || '').startsWith(emoji)) {
         const text = line.slice(emoji.length).trim().replace(/^(Mo|Di|Mi|Do|Fr)\s+/, '');

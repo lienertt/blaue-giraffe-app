@@ -203,6 +203,7 @@ test('withoutSubstituteDay takes one day out or empties the comment', () => {
 test('timeOptions and splitDayLine', () => {
   assert.deepEqual(BG.timeOptions('07:00', '08:00', 30), ['07:00', '07:30', '08:00']);
   assert.deepEqual(BG.splitDayLine('🟠 Mo 08:00 - 17:00 | ab 12:00: max. 8 Kinder'), { status: 'orange', text: '08:00 - 17:00 | ab 12:00: max. 8 Kinder' });
+  assert.deepEqual(BG.splitDayLine('🟡 Di 09:00 - 17:00'), { status: 'gelb', text: '09:00 - 17:00' });
   assert.equal(BG.splitDayLine('⚠️ Fr 08:00 - 15:00 | Unzulässiger Dienstplan').status, 'warnung');
   assert.deepEqual(BG.splitDayLine(undefined), { status: '', text: '' });
 });
